@@ -1,0 +1,4 @@
+
+# ignoring json and csv (data files)
+*.json
+*.csv
