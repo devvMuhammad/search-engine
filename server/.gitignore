@@ -2,3 +2,6 @@
 # ignoring json and csv (data files)
 *.json
 *.csv
+
+# ignore virtual environment folder
+myenv/
