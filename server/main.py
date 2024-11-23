@@ -1,7 +1,7 @@
 import pandas as pd # type: ignore
 import numpy as np # type: ignore
 
-# This file contains the code to preprocess the ENTIRE sdataset
+# This file contains the code for cleaning the ENTIRE dataset
 
 def process_dataset(file_path, output_csv, nrows=None):
     try:
