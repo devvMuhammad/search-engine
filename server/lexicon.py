@@ -6,7 +6,7 @@ import os  # Import os module to check if the file exists
 def build_simple_lexicon(df):
     lexicon = {}
     
-    for column in ['title', 'abstract']:  # Use the 'title' and 'abstract' columns
+    for column in ['title', 'abstract', 'keywords']:  # Use the 'title' and 'abstract' columns
         for token in df[column]:  # Iterate over the rows of the specified columns
             token = str(token)  # Convert the token to a string
             try:
@@ -32,6 +32,9 @@ except Exception as e:
     print(f"Lexicon file not found! Creating one in {file_path}!")
     df = pd.read_csv('data/preprocessed_test_100k.csv')  # Load the data (adjust nrows as needed)
     lexicon = build_simple_lexicon(df)  # Build the lexicon
+    # create the lexicon directory
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # Save the lexicon to a JSON file, it not exists, then create it
     with open(file_path, 'w') as json_file:
         json.dump(lexicon, json_file, indent=4)
 
