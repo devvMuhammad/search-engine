@@ -39,6 +39,6 @@ def process_dataset(file_path, output_csv, nrows=None):
 
 # Usage
 input_file = "data/dblp-citation-network-v14.csv"  # Path to the large CSV file
-output_file = "data/cleaned_data.csv"     # Output file to save the extracted data
-process_dataset(input_file, output_file)
+output_file = "data/test_100k.csv"     # Output file to save the extracted data
+process_dataset(input_file, output_file, 100000)
 
