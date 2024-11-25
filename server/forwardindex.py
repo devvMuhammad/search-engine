@@ -1,20 +1,26 @@
 import pandas as pd
 import json
+from collections import defaultdict
 
-# Pre-processed file will be used for forward indexing
+# Path to the preprocessed file and lexicon
 input_file = "data/preprocessed_test_100k.csv"
+lexicon_file = "lexicon/lexicon.json"
+output_file = "data/forward_index.json"
+
+# Load the lexicon from the specified JSON file
+with open(lexicon_file, 'r') as json_file:
+    lexicon = json.load(json_file)
+
+# Create a set of valid words for faster lookup
+valid_words = set(lexicon.keys())
 
 # Load the CSV file
 df = pd.read_csv(input_file)
 
 # Replace NaN values in the relevant columns with empty strings
-df.fillna({'title':'','abstract':'','keywords':''},inplace=True)
+df.fillna({'title':'','abstract':'','keywords':''}, inplace=True)
 
-# Dictionary to store lexicon (word -> word_id)
-lexicon = {}
-word_id = 0 # Initialize word_id counter
-
-# Dictionary to store forward index (docId-> {word_ids: [list],positions:{word_id:[list]},frequencies:{word_id:[count]}})
+# Dictionary to store forward index (docId-> {word_id: {frequency,positons}})
 forward_index = {}
 
 # Iterate through each row of the dataframe
@@ -23,44 +29,27 @@ for _,row in df.iterrows():
     # Concatenate list of words from each column: title, abstract, keywords
     words = row['title'].split() + row['abstract'].split() + row['keywords'].split()
 
-    # Dictionary to store word frequencies and positions in the current document
-    word_positions = {}
-    word_frequencies = {}
-
-    # List to store word_ids for the current document
-    word_ids = []
+    # Dictionary to store word data for the current document
+    word_data = defaultdict(lambda: {'frequency': 0, 'positions': []})
 
     # Iterate through the words and track their word_id, frequency, and positions
-    for position,word in enumerate(words):  
-        # if word not in lexicon assign a new word_id
-        if word not in lexicon:
-            lexicon[word] = word_id
-            word_id += 1
+    for position, word in enumerate(words):  
+        # Skip words not in the loaded lexicon
+        if word not in valid_words:
+            continue
 
-        word_id_for_term = lexicon[word]
-        word_ids.append(word_id_for_term)
-
-        # Update word frequencies and positions in the document
-        if word_id_for_term in word_positions:
-           word_positions[word_id_for_term].append(position)
-           word_frequencies[word_id_for_term] += 1
-        else:
-            word_positions[word_id_for_term] = [position]
-            word_frequencies[word_id_for_term] = 1
+        # Access word_id from lexicon (the 'id' field)
+        word_id_for_term = lexicon[word]["id"]
+        
+        # Update word data for the current document
+        word_data[word_id_for_term]['positions'].append(position)
+        word_data[word_id_for_term]['frequency'] += 1
 
     # Store the data associated with the document id in forward index
-    forward_index[doc_id] = {
-        "word_ids": word_ids,
-        "positions": word_positions,
-        "frequencies": word_frequencies
-    }
+    forward_index[doc_id] = dict(word_data)
 
-# Save lexicon and forward index to a json file
-output_file = "data/forward_index.json"
-
-# Write the lexicon and forward index to the file in JSON format
+# Save forward index to a json file
 with open(output_file,'w') as json_file:
-   json.dump({'lexicon': lexicon,'forward_index': forward_index},json_file,indent=4)
-       # separators=(',', ': '))
+   json.dump({'forward_index': forward_index},json_file,indent=4)
 
 print(f"Forward index saved to {output_file}")
