@@ -50,6 +50,6 @@ for _,row in df.iterrows():
 
 # Save forward index to a json file
 with open(output_file,'w') as json_file:
-   json.dump({'forward_index': forward_index},json_file,indent=4)
+   json.dump(forward_index,json_file,indent=4)
 
 print(f"Forward index saved to {output_file}")
