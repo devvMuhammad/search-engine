@@ -14,13 +14,13 @@ with open(lexicon_file, 'r') as f:
     lexicon = json.load(f)
 
 # Dictionary to store the inverted index
-inverted_index = defaultdict(lambda: {[]})
+inverted_index = defaultdict(list)  # Use list directly for storing documents
 
 # Build the inverted index
 for doc_id, word_data in forward_index.items():
     for word_id, metadata in word_data.items():
-         # Add or update entry for the word_id
-        inverted_index[word_id]['documents'].append({
+        # Add the document's information to the inverted index for the word_id
+        inverted_index[word_id].append({
             'doc_id': doc_id,
             'frequency': metadata['frequency'],
             'positions': metadata['positions']
@@ -28,7 +28,6 @@ for doc_id, word_data in forward_index.items():
 
 # Save the inverted index to a JSON file
 with open(inverted_index_file, 'w') as f:
- 
     json.dump(inverted_index, f, indent=4)
 
 print(f"Inverted index saved to {inverted_index_file}")
