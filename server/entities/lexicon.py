@@ -3,7 +3,7 @@ import json
 import os 
 
 class Lexicon:
-    path = 'data/lexicon.json'
+    path = '../data/lexicon.json'
     def __init__(self):
         # load the lexicon on constructor call
         self.lexicon = self.__load()

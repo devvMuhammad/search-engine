@@ -4,9 +4,10 @@ import json
 from collections import defaultdict
 from lexicon import Lexicon
 
+
 class ForwardIndex:
     def __init__(self):
-        self.path = "data/forward_index.json"
+        self.path = "../data/forward_index.json"
         self.data = self.__load()
         pass
 
@@ -21,43 +22,39 @@ class ForwardIndex:
 
 
     def __build(self):
-        # specifying paths for preprocessed data and destination of output files
-        input_file = "data/preprocessed_test_100k.csv"
-
-        # load the lexicon
+        input_file = "../data/preprocessed_test_100k.csv"
         lexiconObj = Lexicon()
         lexicon = lexiconObj.lexicon
-
-        # load the preprocessed data
         df = pd.read_csv(input_file)
-
-        # in case of null vales in title, abstract and keywords, replace them with empty strings
         df.fillna({'title':'','abstract':'','keywords':''}, inplace=True)
-
-        # dictionary to store forward index
         forward_index = {}
 
         for _,row in df.iterrows():
             doc_id = row['id']
-            # combine tokens from title, abstract, keywords
-            words = row['title'].split() + row['abstract'].split() + row['keywords'].split()
+            # subdive the words into three sections
+            sections = [
+                (row['title'].split(), 0),   
+                (row['abstract'].split(), 1),  
+                (row['keywords'].split(), 2)   
+            ]
+            
+            # information for each word
+            word_dict = defaultdict(lambda: {'frequency': [0, 0, 0], 'positions': []})
 
-            # dictionary to store data for a document
-            word_dict = defaultdict(lambda: {'frequency': 0, 'positions': []})
-
-            for position, word in enumerate(words):  
-                # in case of no word in lexicon, skip (which is unlikely)
-                if word not in lexicon:
-                    continue
-
-                # get word_id from lexicon
-                word_id = lexiconObj.get_word_id(word)
-                
-                # add position to the 'positions' field and increment frequency
-                word_dict[word_id]['positions'].append(position)
-                word_dict[word_id]['frequency'] += 1
-
-            # Store the data associated with the document id in forward index
+            base_position = 0
+            
+            for words, section_index in sections:
+                # iterate through the words in the section
+                for current_position, word in enumerate(words):
+                    if word in lexicon:
+                        word_id = lexiconObj.get_word_id(word)
+                        word_dict[word_id]['positions'].append(current_position + base_position)
+                        # increment the frequency of the word in that section
+                        word_dict[word_id]['frequency'][section_index] += 1
+                # update the base position
+                base_position += len(words)
+            
+            # set the word_dict to the doc_id
             forward_index[doc_id] = dict(word_dict)
 
         # Save forward index to a json file

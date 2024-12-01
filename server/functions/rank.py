@@ -12,9 +12,9 @@ k1 = 1.5  # Term frequency saturation parameter
 b = 0.75  # Length normalization parameter
 
 # Path to the forward index and lexicon files
-forward_index_file = "data/forward_index.json"
-inverted_index_file = "data/inverted_index.json"
-lexicon_file = "data/lexicon.json"
+forward_index_file = "../data/forward_index.json"
+inverted_index_file = "../data/inverted_index.json"
+lexicon_file = "../data/lexicon.json"
 
 # Load the forward index and lexicon
 start = time.time()

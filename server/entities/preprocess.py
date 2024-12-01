@@ -9,7 +9,6 @@ def preprocess_dataset(file_path, output_path):
     -> Tokenization
     -> Normalization
     -> Removing stop words
-    -> Stemming
     -> Lemmatization
     """
 
@@ -35,6 +34,6 @@ def preprocess_dataset(file_path, output_path):
     print(f"Processed file saved to: {output_path}")
 
 
-input_file = "data/test_100k.csv"  
-output_file = "data/preprocessed_test_100k.csv" 
+input_file = "../data/test_100k.csv"  
+output_file = "../data/preprocessed_test_100k.csv" 
 preprocess_dataset(input_file, output_file)

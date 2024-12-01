@@ -41,9 +41,6 @@ def remove_stopwords(tokens):
 def correct_spelling(tokens):
     return [spell(word) for word in tokens]  # Correct spelling of each word
 
-def stem_tokens(tokens):
-    return [stemmer.stem(word) for word in tokens]  # Apply stemming to tokens
-
 def lemmatize_tokens(tokens):
     return [lemmatizer.lemmatize(word) for word in tokens]  # Apply lemmatization to tokens
 
@@ -62,7 +59,6 @@ def preprocess_text(text):
     tokens = [word for word in tokens if len(word) > 2]
 
     # tokens = correct_spelling(tokens)  # Correct spelling if necessary
-    tokens = stem_tokens(tokens)  # Apply stemming
     tokens = lemmatize_tokens(tokens)  # Apply lemmatization
     
     return " ".join(tokens)  # Return the list of tokens
