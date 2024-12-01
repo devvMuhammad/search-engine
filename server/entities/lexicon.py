@@ -17,7 +17,7 @@ class Lexicon:
         # if does not exists, then build the lexicon and return it
         else:
             print(f"Lexicon file not found! Creating one in {self.path}!")
-            df = pd.read_csv('data/preprocessed_test_100k.csv')
+            df = pd.read_csv('../data/preprocessed_test_100k.csv')
             return self.build(df)
         
     def get_word_id(self, word):
@@ -60,4 +60,5 @@ class Lexicon:
         
 
 lexicon = Lexicon()
+print(len(lexicon.lexicon))
 print(lexicon.get_word_id("machine"))
