@@ -1,3 +1,9 @@
+import sys 
+import os
+
+# add server directory to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import time
 import pandas as pd
 from lib.utils import preprocess_text
