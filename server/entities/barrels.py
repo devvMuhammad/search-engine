@@ -1,86 +1,93 @@
-import json
-from collections import defaultdict
 import os
-import math
+import json
+import hashlib
+from collections import defaultdict
 
-from invertindex import InvertedIndex
+class Barrels:
+    def _init_(self, inverted_index_path, barrels_dir, num_barrels=10):
+        self.inverted_index_path = inverted_index_path
+        self.barrels_dir = barrels_dir
+        self.num_barrels = num_barrels
+        self.__ensure_dir()
 
+    def __ensure_dir(self):
+        """Ensure the barrels directory exists."""
+        if not os.path.exists(self.barrels_dir):
+            os.makedirs(self.barrels_dir)
 
-class BarrelIndex:
-    def __init__(self, num_barrels=10):
-        self.num_barrels = num_barrels  # Number of barrels to split the index into
-        self.barrel_folder = os.path.join(os.path.dirname(__file__), "../data", "barrels")  # Folder to store the barrels
-        os.makedirs(self.barrel_folder, exist_ok=True)
+    def __hash_to_barrel(self, word_id):
+        """Assign a word ID to a barrel based on its hash value."""
+        return int(hashlib.md5(word_id.encode()).hexdigest(), 16) % self.num_barrels
 
-    def build(self, inverted_index):
-        """
-        Split the inverted index into barrels and save each barrel as a separate file.
-        """
-        # Calculate the number of items per barrel
-        total_words = len(inverted_index)
-        words_per_barrel = math.ceil(total_words / self.num_barrels)
-        
-        # Split the inverted index into barrels
-        barrel = defaultdict(list)
-        barrel_index = 0
-        word_count = 0
-        
-        for word_id, doc_data in inverted_index.items():
-            if word_count >= words_per_barrel:
-                # Save the current barrel and start a new one
-                self.save_barrel(barrel, barrel_index)
-                barrel.clear()
-                barrel_index += 1
-                word_count = 0
-
-            # Add the current word to the barrel
-            barrel[word_id] = doc_data
-            word_count += 1
-        
-        # Save the last barrel
-        if barrel:
-            self.save_barrel(barrel, barrel_index)
-
-        print(f"Barrels have been created in '{self.barrel_folder}'.")
-
-    def save_barrel(self, barrel, barrel_index):
-        """
-        Save a single barrel to a JSON file.
-        """
-        barrel_file = os.path.join(self.barrel_folder, f"barrel_{barrel_index}.json")
-        with open(barrel_file, 'w') as f:
-            json.dump(barrel, f, indent=2)
-
-    def load_barrel(self, barrel_index):
-        """
-        Load a barrel from a JSON file.
-        """
-        barrel_file = os.path.join(self.barrel_folder, f"barrel_{barrel_index}.json")
+    def build(self):
+        """Partition the inverted index into barrels."""
         try:
-            with open(barrel_file, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print(f"Barrel {barrel_index} not found!")
-            return {}
+            with open(self.inverted_index_path, 'r') as f:
+                inverted_index = json.load(f)
+        except Exception as e:
+            print(f"Error loading inverted index: {e}")
+            return
 
-    def query(self, word_id):
-        """
-        Query for a word across all barrels.
-        """
-        result = []
-        for barrel_index in range(self.num_barrels):
-            barrel = self.load_barrel(barrel_index)
-            if word_id in barrel:
-                result.extend(barrel[word_id])
+        # Initialize barrel data
+        barrels = [defaultdict(list) for _ in range(self.num_barrels)]
 
-        return result
+        # Distribute entries into barrels
+        for word_id, postings in inverted_index.items():
+            barrel_id = self.__hash_to_barrel(word_id)
+            barrels[barrel_id][word_id] = postings
+
+        # Save each barrel to a separate JSON file
+        for i, barrel in enumerate(barrels):
+            barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
+            with open(barrel_path, 'w') as f:
+                json.dump(barrel, f, indent=2)
+
+        print(f"Barrels created in {self.barrels_dir}")
+
+    def load_barrel(self, query_word):
+        """Load the barrel containing the query word."""
+        barrel_id = self.__hash_to_barrel(query_word)
+        barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
+
+        try:
+            with open(barrel_path, 'r') as f:
+                barrel = json.load(f)
+            return barrel.get(query_word, [])
+        except Exception as e:
+            print(f"Error loading barrel {barrel_id}: {e}")
+            return []
+
+    def count_words_in_barrels(self):
+        """Count the number of words in each barrel."""
+        word_counts = {}
+        
+        for i in range(self.num_barrels):
+            barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
+            try:
+                with open(barrel_path, 'r') as f:
+                    barrel = json.load(f)
+                word_counts[f"barrel_{i}"] = len(barrel)
+            except Exception as e:
+                print(f"Error reading barrel {i}: {e}")
+                word_counts[f"barrel_{i}"] = 0
+        
+        return word_counts
 
 # Usage example
-inverted_index = InvertedIndex().data  # Assuming you have already created the inverted index
-barrel_index = BarrelIndex(num_barrels=5)  # Number of barrels can be adjusted
-barrel_index.build(inverted_index)
+if _name_ == "_main_":
+    inverted_index_path = "../data/inverted_index.json"
+    barrels_dir = "../data/barrels"
+    
+    # Create and build barrels
+    barrels = Barrels(inverted_index_path, barrels_dir)
+    barrels.build()
 
-# Query for a word_id
-word_id_to_query = 1  # Example word_id
-results = barrel_index.query(word_id_to_query)
-print(f"Query results for word_id {word_id_to_query}: {results}")
+    # Load postings for a specific word from its barrel
+    query_word = "machine"
+    postings = barrels.load_barrel(query_word)
+    print(f"Postings for '{query_word}': {postings}")
+
+    # Count words in each barrel
+    word_counts = barrels.count_words_in_barrels()
+    for barrel, count in word_counts.items():
+        print(f"{barrel}: {count} words")
