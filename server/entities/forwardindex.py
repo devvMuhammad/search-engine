@@ -2,12 +2,12 @@ import time
 import pandas as pd
 import json
 from collections import defaultdict
-from lexicon import Lexicon
+from server.entities.lexicon import Lexicon
 
 
 class ForwardIndex:
     def __init__(self):
-        self.path = "../data/forward_index.json"
+        self.path = "server/data/forward_index.json"
         self.data = self.__load()
         pass
 
@@ -22,7 +22,7 @@ class ForwardIndex:
 
 
     def __build(self):
-        input_file = "../data/preprocessed_test_100k.csv"
+        input_file = "server/data/preprocessed_test_100k.csv"
         lexiconObj = Lexicon()
         lexicon = lexiconObj.lexicon
         df = pd.read_csv(input_file)

@@ -1,10 +1,10 @@
 from collections import defaultdict
 import json
 import time
-from forwardindex import ForwardIndex
+from server.entities.forwardindex import ForwardIndex
 
 class InvertedIndex:
-    inverted_index_file = "../data/inverted_index.json"
+    inverted_index_file = "server/data/inverted_index.json"
 
     def __init__(self):
         self.data = self.__load()
