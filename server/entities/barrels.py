@@ -4,7 +4,7 @@ import hashlib
 from collections import defaultdict
 
 class Barrels:
-    def _init_(self, inverted_index_path, barrels_dir, num_barrels=10):
+    def __init__(self, inverted_index_path, barrels_dir, num_barrels=10):
         self.inverted_index_path = inverted_index_path
         self.barrels_dir = barrels_dir
         self.num_barrels = num_barrels
@@ -74,20 +74,19 @@ class Barrels:
         return word_counts
 
 # Usage example
-if _name_ == "_main_":
-    inverted_index_path = "../data/inverted_index.json"
-    barrels_dir = "../data/barrels"
+inverted_index_path = "server/data/inverted_index.json"
+barrels_dir = "server/data/barrels"
     
     # Create and build barrels
-    barrels = Barrels(inverted_index_path, barrels_dir)
-    barrels.build()
+barrels = Barrels(inverted_index_path, barrels_dir)
+barrels.build()
 
     # Load postings for a specific word from its barrel
-    query_word = "machine"
-    postings = barrels.load_barrel(query_word)
-    print(f"Postings for '{query_word}': {postings}")
+query_word = "machine"
+postings = barrels.load_barrel(query_word)
+print(f"Postings for '{query_word}': {postings}")
 
     # Count words in each barrel
-    word_counts = barrels.count_words_in_barrels()
-    for barrel, count in word_counts.items():
+word_counts = barrels.count_words_in_barrels()
+for barrel, count in word_counts.items():
         print(f"{barrel}: {count} words")
