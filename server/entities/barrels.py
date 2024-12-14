@@ -52,7 +52,6 @@ class Barrels:
 
 
     def build_incrementally(self):
-        start = time.time()
 
         # open barrel files
         barrel_files = {}
@@ -87,9 +86,6 @@ class Barrels:
             barrel_files[i].write('\n}')
             barrel_files[i].close()
 
-        end = time.time()
-        print(f"Barrels created in {self.barrels_dir}")
-        print(f"Time taken: {end - start}")
 
         def load_barrel(self, query_word):
 
