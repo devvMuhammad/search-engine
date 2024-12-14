@@ -1,12 +1,12 @@
-import sys 
-import os
+# import sys 
+# import os
 
 # add server directory to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import time
 import pandas as pd
-from lib.utils import preprocess_text
+from server.lib.utils import preprocess_text
 
 def preprocess_dataset(file_path, output_path):
     """
@@ -40,6 +40,6 @@ def preprocess_dataset(file_path, output_path):
     print(f"Processed file saved to: {output_path}")
 
 
-input_file = "../data/test_100k.csv"  
-output_file = "../data/preprocessed_test_100k.csv" 
+input_file = "server/data/test_100k.csv"  
+output_file = "server/data/preprocessed_test_100k.csv" 
 preprocess_dataset(input_file, output_file)

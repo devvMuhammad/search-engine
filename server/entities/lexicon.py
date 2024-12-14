@@ -3,7 +3,7 @@ import json
 import os 
 
 class Lexicon:
-    path = '../data/lexicon.json'
+    path = 'server/data/lexicon.json'
     def __init__(self):
         # load the lexicon on constructor call
         self.lexicon = self.__load()
@@ -17,7 +17,7 @@ class Lexicon:
         # if does not exists, then build the lexicon and return it
         else:
             print(f"Lexicon file not found! Creating one in {self.path}!")
-            df = pd.read_csv('../data/preprocessed_test_100k.csv')
+            df = pd.read_csv('server/data/preprocessed_test_100k.csv')
             return self.build(df)
         
     def get_word_id(self, word):
