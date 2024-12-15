@@ -6,7 +6,6 @@ import time
 import ijson
 
 class Barrels:
-    
     def __init__(self, inverted_index_path, barrels_dir, num_barrels=10):
         from server.entities.lexicon import Lexicon
         self.lexicon = Lexicon()
@@ -25,10 +24,8 @@ class Barrels:
         return int(hashlib.md5(word_id.encode()).hexdigest(), 16) % self.num_barrels
 
     def build(self):
-        start = time.time()
-
-
         """Partition the inverted index into barrels."""
+        start = time.time()
         from server.entities.invertindex import InvertedIndex
         inverted_index = InvertedIndex().data
 
@@ -50,26 +47,22 @@ class Barrels:
         print(f"Barrels created in {self.barrels_dir}")
         print(f"Time taken: {end - start}")
 
-
     def build_incrementally(self):
-
-        # open barrel files
+        """Incrementally partition the inverted index into barrels."""
+        # Open barrel files
         barrel_files = {}
         for i in range(self.num_barrels):
             barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
             barrel_files[i] = open(barrel_path, 'w')
-            # start the json file with { and a new line (this is how json files start)
-            barrel_files[i].write('{\n')
+            barrel_files[i].write('{\n')  # Start the JSON file
 
-        # array of flags which indicate if the first entry has been written to the barrel
+        # Array of flags to track the first entry for each barrel
         first_entry = [True] * self.num_barrels
 
-        # open using ijson
+        # Incremental parsing using ijson
         with open(self.inverted_index_path, 'r') as f:
-            # get the key, value pair
             parser = ijson.kvitems(f, '')
 
-            # incremental parsing
             for word_id, postings in parser:
                 barrel_id = self.hash_to_barrel(word_id)
 
@@ -80,48 +73,41 @@ class Barrels:
 
                 barrel_files[barrel_id].write(f'  "{word_id}": {json.dumps(postings)}')
 
-        # close all barrel files
+        # Close all barrel files
         for i in range(self.num_barrels):
-            # end the json file with a new line and }
             barrel_files[i].write('\n}')
             barrel_files[i].close()
 
+    def load_barrel(self, query_word):
+        """Load the barrel containing the query word."""
+        word_id = str(self.lexicon.get_word_id(query_word))
+        barrel_id = self.hash_to_barrel(str(word_id))
+        barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
 
-        def load_barrel(self, query_word):
+        try:
+            with open(barrel_path, 'r') as f:
+                barrel = json.load(f)
+            return barrel[word_id]
+        except Exception as e:
+            print(f"Error loading barrel {barrel_id}: {e}")
+            return []
 
-            word_id = str(self.lexicon.get_word_id(query_word))
-
-            """Load the barrel containing the query word."""
-            barrel_id = self.hash_to_barrel(str(word_id))
-            print(f"barrel_id for {query_word} with id {word_id} is: {barrel_id}")
-
-            barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
-            print(f"file path is {barrel_path}")
+    def count_words_in_barrels(self):
+        """Count the number of words in each barrel."""
+        word_counts = {}
+        for i in range(self.num_barrels):
+            barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
             try:
                 with open(barrel_path, 'r') as f:
                     barrel = json.load(f)
-                return barrel[word_id]
+                word_counts[f"barrel_{i}"] = len(barrel)
             except Exception as e:
-                print(f"Error loading barrel {barrel_id}: {e}")
-                return []
+                print(f"Error reading barrel {i}: {e}")
+                word_counts[f"barrel_{i}"] = 0
+        return word_counts
 
-        def count_words_in_barrels(self):
-            """Count the number of words in each barrel."""
-            word_counts = {}
-            
-            for i in range(self.num_barrels):
-                barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
-                try:
-                    with open(barrel_path, 'r') as f:
-                        barrel = json.load(f)
-                    word_counts[f"barrel_{i}"] = len(barrel)
-                except Exception as e:
-                    print(f"Error reading barrel {i}: {e}")
-                    word_counts[f"barrel_{i}"] = 0
-            
-            return word_counts
 
-# takes a function and calculates the time taken to execute it
+# Timer decorator to calculate execution time
 def calculate_time(func):
     def wrapper(*args, **kwargs):
         start = time.time()
@@ -131,13 +117,26 @@ def calculate_time(func):
         return result
     return wrapper
 
+
+# Calculate num_barrels based on the size of the lexicon
+from server.entities.lexicon import Lexicon
+lexicon = Lexicon()
+words_count = len(lexicon.lexicon)
+num_barrels = words_count // 10000
+
+# Ensure at least one barrel is created
+if num_barrels == 0:
+    num_barrels = 1
+
+# Paths
 inverted_index_path = "server/data/inverted_index.json"
 barrels_dir = "server/data/barrels"
 
+# Instantiate the Barrels object
 start = time.time()
-barrels = Barrels(inverted_index_path, barrels_dir)
+barrels = Barrels(inverted_index_path, barrels_dir, num_barrels=num_barrels)
 end = time.time()
-print(f"Time taken to instantiate barrel object: {end-start}")
+print(f"Time taken to instantiate barrel object: {end - start}")
 
-
+# Build barrels incrementally and measure the time taken
 calculate_time(barrels.build_incrementally)()
