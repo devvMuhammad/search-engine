@@ -64,6 +64,42 @@ class ForwardIndex:
         print(f"Forward index saved to {self.path}")
         return forward_index
 
+    def append_to_forward_index(self, new_doc):
+        """
+        Append a new document to the existing forward index.
+        :para new_doc: Dictionary containing 'id', 'title', 'abstract', and 'keywords'.
+        """
+        lexiconObj = Lexicon()
+        lexicon = lexiconObj.lexicon
+        doc_id = new_doc['id']
+
+        # Subdivide the words into three sections
+        sections = [
+            (new_doc['title'].split(), 0),  # Section 0: title
+            (new_doc['abstract'].split(), 1),  # Section 1: abstract
+            (new_doc['keywords'].split(), 2)   # Section 2: keywords
+        ]
+        
+        word_dict = defaultdict(lambda: {'frequency': [0, 0, 0], 'positions': []})
+        base_position = 0
+
+        # Iterate through each section of the document
+        for words, section_index in sections:
+            for current_position, word in enumerate(words):
+                if word in lexicon:
+                    word_id = lexiconObj.get_word_id(word)
+                    word_dict[word_id]['positions'].append(current_position + base_position)
+                    word_dict[word_id]['frequency'][section_index] += 1
+            base_position += len(words)
+
+        # Append the new document to the forward index
+        self.data[doc_id] = dict(word_dict)
+
+        # Save the updated forward index back to the file
+        with open(self.path, 'w') as f:
+            json.dump(self.data, f, indent=1)
+        
+        print(f"New document with ID {doc_id} added to the forward index.")
 
 start_time = time.time()
 forward_index = ForwardIndex().data

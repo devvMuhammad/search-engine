@@ -50,12 +50,45 @@ class Lexicon:
                     print(f"Error: {e} Token: {token} | Token type: {type(token)} | Column: {column}")
                     
                     continue
-
         # save the lexicon to the path specified in the class privately
         with open(self.path, 'w') as json_file:
             json.dump(lexicon, json_file, indent=4)
 
         return lexicon
+    def update_lexicon(self,new_doc):
+        """
+        Update the existing lexicon with a new document.
+        :param new_doc: Dictionary containing 'title', 'abstract', and 'keywords'.
+        """
+        for column in ['title', 'abstract']:
+            if column in new_doc:
+                # Process the text into tokens
+                token_list = str(new_doc[column]).split(" ")
+                for word in token_list: 
+                    # check if the word already exists in the lexicon
+                    if word not in self.lexicon:
+                        # default frequency is 1
+                        self.lexicon[word] = {"frequency": 1, "id":len(self.lexicon)} 
+                    else:
+                        # increment frequency by 1 if it already exists
+                        self.lexicon[word]["frequency"] += 1
+        
+        if 'keywords' in new_doc and isinstance(new_doc['keywords'], list):
+            for word in new_doc['keywords']:
+                word = word.lower()
+                # check if the word already exists in the lexicon
+                if word not in self.lexicon:
+                    # default frequency is 1
+                    self.lexicon[word] = {"frequency": 1, "id":len(self.lexicon)} 
+                else:
+                    # increment frequency by 1 if it already exists
+                    self.lexicon[word]["frequency"] += 1
+            
+        # save the lexicon to the path specified in the class privately
+        with open(self.path, 'w') as json_file:
+            json.dump(self.lexicon, json_file, indent=4)
+
+        print(f"Lexicon updated and saved to {self.path}")
 
         
 
