@@ -5,6 +5,7 @@ from collections import defaultdict
 import time
 import ijson
 
+
 class Barrels:
     def __init__(self, inverted_index_path, barrels_dir, num_barrels=10):
         from server.entities.lexicon import Lexicon
@@ -105,6 +106,7 @@ class Barrels:
                 print(f"Error reading barrel {i}: {e}")
                 word_counts[f"barrel_{i}"] = 0
         return word_counts
+    
 
 
 # Timer decorator to calculate execution time
@@ -140,3 +142,41 @@ print(f"Time taken to instantiate barrel object: {end - start}")
 
 # Build barrels incrementally and measure the time taken
 calculate_time(barrels.build_incrementally)()
+
+def update_barrels(self, new_doc_id, new_postings):
+    """Update barrels when a new document is added to the index."""
+        
+    # Step 1: Update the barrels by adding the new document's word postings
+    for word_id, metadata in new_postings.items():
+        barrel_id = self.hash_to_barrel(str(word_id))
+        barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
+
+        # Open and update the barrel
+        if os.path.exists(barrel_path):
+            with open(barrel_path, 'r+') as f:
+                barrel = json.load(f)
+                if word_id in barrel:
+                    barrel[word_id].append({
+                         "doc_id": new_doc_id,
+                         "frequency": metadata["frequency"],
+                         "positions": metadata["positions"]
+                        })
+                else:
+                    barrel[word_id] = [{
+                        "doc_id": new_doc_id,
+                        "frequency": metadata["frequency"],
+                        "positions": metadata["positions"]
+                        }]
+                
+                 # Re-save the updated barrel
+                    f.seek(0)
+                    json.dump(barrel, f, indent=2)
+        else:
+            # If the barrel does not exist, create it
+            with open(barrel_path, 'w') as f:
+                json.dump({word_id: [{
+                    "doc_id": new_doc_id,
+                    "frequency": metadata["frequency"],
+                    "positions": metadata["positions"]
+                }]}, f, indent=2)
+        print(f"Barrels updated for new document {new_doc_id}")
