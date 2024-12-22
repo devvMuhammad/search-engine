@@ -1,9 +1,3 @@
-# import sys 
-# import os
-
-# add server directory to path
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import os
 import time
 import pandas as pd
@@ -28,9 +22,9 @@ def preprocess_dataset(file_path, output_path):
     for column in ['title', 'abstract']:
         df[column] = df[column].apply(lambda x: preprocess_text(x) if isinstance(x, str) else [])
 
-    # preprocess keywords i.e it is an array of strings, just convert to lowercase
+    # preprocess keywords i.e it is an array of strings, concatenate them into a single string
     if 'keywords' in df.columns:
-        df['keywords'] = df['keywords'].apply(lambda x: [word.lower() for word in x] if isinstance(x, list) else [])
+        df['keywords'] = df['keywords'].apply(lambda x: ' '.join([word.lower() for word in eval(x)]) if isinstance(x, str) else '').apply(lambda x: preprocess_text(x) if isinstance(x, str) else [])
 
     # save the preprocessed data to the new file
     df.to_csv(output_path, index=False)
@@ -40,10 +34,11 @@ def preprocess_dataset(file_path, output_path):
     print(f"Preprocessing completed in {end_time - start_time:.2f} seconds.")
     print(f"Processed file saved to: {output_path}")
 
-
-input_file = "server/data/test_100k.csv"  
-output_file = "server/data/preprocessed_test_100k.csv" 
-preprocess_dataset(input_file, output_file)
+if __name__ == "__main__":
+    print("Preprocessing test_100k.csv")
+    input_file = "server/data/test_100k.csv"  
+    output_file = "server/data/preprocessed_test_100k.csv" 
+    preprocess_dataset(input_file, output_file)
 
 def append_new_document(new_doc,output_path):
     """

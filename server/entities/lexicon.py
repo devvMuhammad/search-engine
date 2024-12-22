@@ -1,6 +1,7 @@
 import pandas as pd
 import json
 import os 
+import time
 
 class Lexicon:
     path = 'server/data/lexicon.json'
@@ -60,7 +61,7 @@ class Lexicon:
         Update the existing lexicon with a new document.
         :param new_doc: Dictionary containing 'title', 'abstract', and 'keywords'.
         """
-        for column in ['title', 'abstract']:
+        for column in ['title', 'abstract', 'keywords']:
             if column in new_doc:
                 # Process the text into tokens
                 token_list = str(new_doc[column]).split(" ")
@@ -73,17 +74,7 @@ class Lexicon:
                         # increment frequency by 1 if it already exists
                         self.lexicon[word]["frequency"] += 1
         
-        if 'keywords' in new_doc and isinstance(new_doc['keywords'], list):
-            for word in new_doc['keywords']:
-                word = word.lower()
-                # check if the word already exists in the lexicon
-                if word not in self.lexicon:
-                    # default frequency is 1
-                    self.lexicon[word] = {"frequency": 1, "id":len(self.lexicon)} 
-                else:
-                    # increment frequency by 1 if it already exists
-                    self.lexicon[word]["frequency"] += 1
-            
+    
         # save the lexicon to the path specified in the class privately
         with open(self.path, 'w') as json_file:
             json.dump(self.lexicon, json_file, indent=4)
@@ -91,7 +82,9 @@ class Lexicon:
         print(f"Lexicon updated and saved to {self.path}")
 
         
-
-lexicon = Lexicon()
-print(len(lexicon.lexicon))
-print(lexicon.get_word_id("machine"))
+if __name__ == "__main__":
+    lexicon = Lexicon()
+    start = time.time()
+    lexicon.build(pd.read_csv('server/data/preprocessed_test_100k.csv'))
+    end = time.time()
+    print(f"Lexicon built in {end-start:.2f} seconds.")

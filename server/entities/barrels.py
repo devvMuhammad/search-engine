@@ -1,19 +1,21 @@
 import os
 import json
 import hashlib
-from collections import defaultdict
 import time
 import ijson
 
 
 class Barrels:
-    def __init__(self, inverted_index_path, barrels_dir, num_barrels=10):
-        from server.entities.lexicon import Lexicon
-        self.lexicon = Lexicon()
-        self.inverted_index_path = inverted_index_path
-        self.barrels_dir = barrels_dir
-        self.num_barrels = num_barrels
+    def __init__(self):
+        self.inverted_index_path = "server/data/inverted_index.json"
+        self.barrels_dir = "server/data/barrels"
         self.__ensure_dir()
+        from server.entities.lexicon import Lexicon
+        lexicon = Lexicon()
+         
+        words_count = len(lexicon.lexicon)
+        self.num_barrels = words_count // 1000
+        self.lexicon = lexicon
 
     def __ensure_dir(self):
         """Ensure the barrels directory exists."""
@@ -25,30 +27,6 @@ class Barrels:
         return int(hashlib.md5(word_id.encode()).hexdigest(), 16) % self.num_barrels
 
     def build(self):
-        """Partition the inverted index into barrels."""
-        start = time.time()
-        from server.entities.invertindex import InvertedIndex
-        inverted_index = InvertedIndex().data
-
-        # Initialize barrel data
-        barrels = [defaultdict(list) for _ in range(self.num_barrels)]
-
-        # Distribute entries into barrels
-        for word_id, postings in inverted_index.items():
-            barrel_id = self.hash_to_barrel(word_id)
-            barrels[barrel_id][word_id] = postings
-
-        # Save each barrel to a separate JSON file
-        for i, barrel in enumerate(barrels):
-            barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
-            with open(barrel_path, 'w') as f:
-                json.dump(barrel, f, indent=2)
-
-        end = time.time()
-        print(f"Barrels created in {self.barrels_dir}")
-        print(f"Time taken: {end - start}")
-
-    def build_incrementally(self):
         """Incrementally partition the inverted index into barrels."""
         # Open barrel files
         barrel_files = {}
@@ -81,17 +59,19 @@ class Barrels:
 
     def load_barrel(self, query_word):
         """Load the barrel containing the query word."""
+        
         word_id = str(self.lexicon.get_word_id(query_word))
         barrel_id = self.hash_to_barrel(str(word_id))
+        # print(f"Loading barrel {barrel_id} for word {query_word} with id {word_id}")
         barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
-
+        print(f"Loading barrel {barrel_id} for word {query_word}")
         try:
             with open(barrel_path, 'r') as f:
                 barrel = json.load(f)
             return barrel[word_id]
         except Exception as e:
             print(f"Error loading barrel {barrel_id}: {e}")
-            return []
+            return None
 
     def count_words_in_barrels(self):
         """Count the number of words in each barrel."""
@@ -120,28 +100,18 @@ def calculate_time(func):
     return wrapper
 
 
-# Calculate num_barrels based on the size of the lexicon
-from server.entities.lexicon import Lexicon
-lexicon = Lexicon()
-words_count = len(lexicon.lexicon)
-num_barrels = words_count // 10000
-
-# Ensure at least one barrel is created
-if num_barrels == 0:
-    num_barrels = 1
-
-# Paths
-inverted_index_path = "server/data/inverted_index.json"
-barrels_dir = "server/data/barrels"
-
-# Instantiate the Barrels object
-start = time.time()
-barrels = Barrels(inverted_index_path, barrels_dir, num_barrels=num_barrels)
-end = time.time()
-print(f"Time taken to instantiate barrel object: {end - start}")
-
 # Build barrels incrementally and measure the time taken
-calculate_time(barrels.build_incrementally)()
+if __name__ == "__main__":
+   
+    barrels = Barrels()
+
+    # # Ensure at least one barrel is created
+    # if num_barrels == 0:
+    #     num_barrels = 1
+    
+    # calculate_time(barrels.build)()
+
+    barrels.load_barrel("lisp")
 
 def update_barrels(self, new_doc_id, new_postings):
     """Update barrels when a new document is added to the index."""

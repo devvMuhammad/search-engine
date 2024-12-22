@@ -23,10 +23,12 @@ def process_dataset(file_path, output_csv, nrows=None):
         # drop rows with any null values in the specified columns
         df_cleaned = df.dropna()
 
+        # Ensure each document is on a single line
+        df_cleaned = df_cleaned.applymap(lambda x: str(x).replace('\r', ' ').replace('\n', ' '))
+
         # display the first few rows of the cleaned data to verify
         print(df_cleaned.head())
         
-
         # save the cleaned data to a new CSV file
         df_cleaned.to_csv(output_csv, index=False)
 
@@ -39,4 +41,3 @@ def process_dataset(file_path, output_csv, nrows=None):
 input_file = "data/dblp-citation-network-v14.csv"  
 output_file = "data/test_100k.csv"     
 process_dataset(input_file, output_file, 100000)
-
