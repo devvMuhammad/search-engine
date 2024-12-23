@@ -59,7 +59,7 @@ const highlightText = (text: string, query: string) => {
     const isMatch = queryStems.some((stem) => wordStem.includes(stem));
     return isMatch ? (
       <>
-        <mark key={index} className="bg-yellow-200">
+        <mark key={word + index} className="bg-yellow-200">
           {word}
         </mark>{" "}
       </>

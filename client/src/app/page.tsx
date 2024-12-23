@@ -21,10 +21,12 @@ type ResultType = {
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [firstRender, setFirstRender] = useState(true);
   const [results, setResults] = useState<ResultType[]>([]);
   const [searchTime, setSearchTime] = useState(0);
 
   const handleSearch = useCallback(async (query: string) => {
+    setFirstRender(false);
     setIsLoading(true);
     setResults([]);
     const start = new Date().getTime();
@@ -67,19 +69,15 @@ export default function Home() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              {results.length > 0 ? (
-                results.map((result) => (
-                  <ResultCard
-                    key={result.doc_id}
-                    result={result}
-                    query={query}
-                  />
-                ))
-              ) : (
-                <p className="text-xl text-center text-gray-600 mt-8">
-                  No results found
-                </p>
-              )}
+              {results.length > 0
+                ? results.map((result, i) => (
+                    <ResultCard key={i} result={result} query={query} />
+                  ))
+                : !firstRender && (
+                    <p className="text-xl text-center text-gray-600 mt-8">
+                      No results found
+                    </p>
+                  )}
             </motion.div>
           )}
         </div>
