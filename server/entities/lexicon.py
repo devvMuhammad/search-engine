@@ -86,6 +86,6 @@ class Lexicon:
 if __name__ == "__main__":
     lexicon = Lexicon()
     start = time.time()
-    lexicon.build(pd.read_csv('server/data/preprocessed_test_100k.csv'))
+    lexicon.build()
     end = time.time()
     print(f"Lexicon built in {end-start:.2f} seconds.")
