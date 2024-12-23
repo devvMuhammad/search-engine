@@ -8,11 +8,11 @@ from server.entities.docindex import DocumentIndex
 
 # BM25 parameters
 k1 = 1.5  # Term frequency saturation parameter, as this increases, importance of term frequency increases slowly
-b = 1  # Length normalization parameter, as this decreases, importance of length decreases
+b = 0.8  # Length normalization parameter, as this decreases, importance of length decreases
 
 # Add section weights at the top with other parameters
-TITLE_WEIGHT = 0.8
-KEYWORDS_WEIGHT = 0.4
+TITLE_WEIGHT = 1.1
+KEYWORDS_WEIGHT = 0.25
 ABSTRACT_WEIGHT = 0.2
 
 # Path to the forward index and lexicon files

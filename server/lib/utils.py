@@ -8,8 +8,8 @@ from contractions import fix
 from autocorrect import spell 
 
 # Initialize and download NLTK tools
-nltk.download('punkt')
-nltk.download('stopwords')
+# nltk.download('punkt')
+# nltk.download('stopwords')
 
 stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
