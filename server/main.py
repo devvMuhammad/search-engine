@@ -38,6 +38,7 @@ def process_dataset(file_path, output_csv, nrows=None):
         print(f"An error occurred: {e}")
 
 # Specify paths in a variable
-input_file = "data/dblp-citation-network-v14.csv"  
-output_file = "data/test_100k.csv"     
-process_dataset(input_file, output_file, 100000)
+if __name__ == "__main__":
+    input_file = "data/dblp-citation-network-v14.csv"  
+    output_file = "data/test_100k.csv"     
+    process_dataset(input_file, output_file, 250000)

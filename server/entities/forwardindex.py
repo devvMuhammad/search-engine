@@ -4,11 +4,11 @@ import json
 from collections import defaultdict
 from server.entities.lexicon import Lexicon
 
-
 class ForwardIndex:
-    def __init__(self):
+    def __init__(self,load=True):
         self.path = "server/data/forward_index.json"
-        self.data = self.__load()
+        if load:
+            self.data = self.__load()
         pass
 
     def __load(self):
@@ -18,10 +18,10 @@ class ForwardIndex:
             return forward_index
         except:
             print(f"Forward Index not found! Creating one in {self.path}")
-            return self.__build()
+            return self.build()
 
 
-    def __build(self):
+    def build(self):
         input_file = "server/data/preprocessed_test_100k.csv"
         lexiconObj = Lexicon()
         lexicon = lexiconObj.lexicon
@@ -101,7 +101,8 @@ class ForwardIndex:
         
         print(f"New document with ID {doc_id} added to the forward index.")
 
-start_time = time.time()
-forward_index = ForwardIndex().data
-end_time = time.time()
-print(f"Forward Index built in {end_time - start_time} seconds")
+if __name__ == "__main__":
+    start_time = time.time()
+    forward_index = ForwardIndex().data
+    end_time = time.time()
+    print(f"Forward Index built in {end_time - start_time} seconds")

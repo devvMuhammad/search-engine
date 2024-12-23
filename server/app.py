@@ -9,6 +9,7 @@ app = Flask(__name__)
 CORS(app)
 @app.route('/search')
 def search():
+    totalStart= time.time()
     try:
         query = request.args.get('q', '')
         if not query:
@@ -27,18 +28,18 @@ def search():
         start = time.time()
         with DocumentIndex() as doc_index:
             # Get first 50 doc IDs
-            doc_ids = [doc_id for doc_id, _ in results[:50]]
+            doc_ids = [doc_id for doc_id, _ in results]
             # Get all documents in one go
             documents = doc_index.get_documents(doc_ids)
             
             # Format results
-            for (doc_id, score), doc in zip(results[:50], documents):
+            for (doc_id, score), doc in zip(results, documents):
                 if doc:
                     formatted_results.append({
                         "doc_id": doc_id,
                         "score": score, 
                         "title": doc['title'],
-                        "abstract": doc['abstract'],
+                        "abstract": doc['abstract'][0:500]+"...",
                         "keywords": doc['keywords'],
                         "year": doc['year'],
                         "venue": doc['venue'],
@@ -46,7 +47,11 @@ def search():
                         "url": doc['url']
                     })
         end = time.time()
+
+        totalEnd = time.time()
         print(f"Document retrieval took {end - start:.4} seconds")
+
+        print(f"Total time is {totalEnd - totalStart:.4} seconds")
 
         return jsonify({
             "results_count": len(results),

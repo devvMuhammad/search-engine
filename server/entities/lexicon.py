@@ -5,9 +5,10 @@ import time
 
 class Lexicon:
     path = 'server/data/lexicon.json'
-    def __init__(self):
+    def __init__(self, load=True):
         # load the lexicon on constructor call
-        self.lexicon = self.__load()
+        if load:
+            self.lexicon = self.__load()
         
     # private property to load the lexicon
     def __load(self):
@@ -18,8 +19,7 @@ class Lexicon:
         # if does not exists, then build the lexicon and return it
         else:
             print(f"Lexicon file not found! Creating one in {self.path}!")
-            df = pd.read_csv('server/data/preprocessed_test_100k.csv')
-            return self.build(df)
+            return self.build()
         
     def get_word_id(self, word):
         if word in self.lexicon:
@@ -28,7 +28,8 @@ class Lexicon:
             return None
         
     
-    def build(self, df):
+    def build(self):
+        df = pd.read_csv('server/data/preprocessed_test_100k.csv')
         lexicon = {}
         
         for column in ['title', 'abstract', 'keywords']:  

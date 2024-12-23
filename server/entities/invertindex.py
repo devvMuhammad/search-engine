@@ -6,8 +6,9 @@ from server.entities.forwardindex import ForwardIndex
 class InvertedIndex:
     inverted_index_file = "server/data/inverted_index.json"
 
-    def __init__(self):
-        self.data = self.__load()
+    def __init__(self,load=True):
+        if load:
+            self.data = self.__load()
         pass
 
     def __load(self):
@@ -16,9 +17,9 @@ class InvertedIndex:
                 return json.load(f)
         except Exception as e:
             print("Inverted Index not found or corrupted! Creating one in", self.inverted_index_file)
-            return self.__build()
+            return self.build()
 
-    def __build(self):
+    def build(self):
 
         # load the lexicon
         forward_index = ForwardIndex().data
@@ -67,7 +68,9 @@ class InvertedIndex:
 
         print("Inverted Index updated successfully.")
         
-startTime = time.time()
-inverted_index = InvertedIndex().data
-endTime = time.time()
-print("Inverted index built in: ", endTime - startTime)
+
+if __name__ == "__main__":        
+    startTime = time.time()
+    inverted_index = InvertedIndex().data
+    endTime = time.time()
+    print("Inverted index built in: ", endTime - startTime)

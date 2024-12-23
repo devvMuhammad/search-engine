@@ -98,7 +98,7 @@ def calculate_bm25(query_terms):
         
         # Get docs containing the term
         barrel_load_start = time.time()
-        docs = barrels.load_barrel(term)
+        docs = barrels.load_barrel(term)[:50]
         timing_logs.append(f"Loading barrel for '{term}': {time.time() - barrel_load_start:.4f} seconds")
         
         if not docs:
@@ -133,7 +133,8 @@ def calculate_bm25(query_terms):
     timing_logs.append(f"Sorting results: {time.time() - sort_start:.4f} seconds")
     
     timing_logs.append(f"Total BM25 calculation time: {time.time() - total_start:.4f} seconds")
-    print(timing_logs)
+    for log in timing_logs:
+        print(log)
     return sorted_scores, timing_logs
 
 def write_results_to_file(results, query_terms, timing_logs):
