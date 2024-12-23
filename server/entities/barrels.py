@@ -104,12 +104,8 @@ def calculate_time(func):
 if __name__ == "__main__":
    
     barrels = Barrels()
-
-    # # Ensure at least one barrel is created
-    # if num_barrels == 0:
-    #     num_barrels = 1
     
-    # calculate_time(barrels.build)()
+    calculate_time(barrels.build)()
 
     barrels.load_barrel("lisp")
 
