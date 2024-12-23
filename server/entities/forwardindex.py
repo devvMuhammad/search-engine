@@ -31,6 +31,9 @@ class ForwardIndex:
 
         for _,row in df.iterrows():
             doc_id = row['id']
+            #computing the total length of the document
+            total_length = len(row['title'].split()) + len(row['abstract'].split())
+
             # subdive the words into three sections
             sections = [
                 (row['title'].split(), 0),   
@@ -54,8 +57,11 @@ class ForwardIndex:
                 # update the base position
                 base_position += len(words)
             
-            # set the word_dict to the doc_id
-            forward_index[doc_id] = dict(word_dict)
+            # set the word_dict and total length to the doc_id
+            forward_index[doc_id] = {
+                "word_data":dict(word_dict),
+                "length":total_length
+            }
 
         # Save forward index to a json file
         with open(self.path,'w') as j:
@@ -72,6 +78,8 @@ class ForwardIndex:
         lexiconObj = Lexicon()
         lexicon = lexiconObj.lexicon
         doc_id = new_doc['id']
+
+        total_length = len(new_doc['title'].split()) + len(new_doc['abstract'].split())
 
         # Subdivide the words into three sections
         sections = [
@@ -93,7 +101,10 @@ class ForwardIndex:
             base_position += len(words)
 
         # Append the new document to the forward index
-        self.data[doc_id] = dict(word_dict)
+        self.data[doc_id] = {
+            "word_data": dict(word_dict),
+            "length": total_length  # Add total length
+        }
 
         # Save the updated forward index back to the file
         with open(self.path, 'w') as f:
