@@ -34,7 +34,7 @@ class InvertedIndex:
                     "doc_id": doc_id,
                     "frequency": metadata["frequency"],
                     "positions": metadata["positions"],
-                    "length": doc_length  # Store the document length
+                    "doc_length": doc_length  # Store the document length
                 })
 
         # Save the inverted index to a JSON file
@@ -82,6 +82,7 @@ class InvertedIndex:
 
 if __name__ == "__main__":
     startTime = time.time()
-    inverted_index = InvertedIndex().data
+    inverted_index = InvertedIndex()
+    inverted_index.build()
     endTime = time.time()
     print("Inverted index built in: ", endTime - startTime)
