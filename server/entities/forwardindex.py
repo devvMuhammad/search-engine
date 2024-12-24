@@ -5,7 +5,7 @@ from collections import defaultdict
 from server.entities.lexicon import Lexicon
 
 class ForwardIndex:
-    def __init__(self,load=True):
+    def __init__(self, load=True):
         self.path = "server/data/forward_index.json"
         if load:
             self.data = self.__load()
@@ -20,25 +20,26 @@ class ForwardIndex:
             print(f"Forward Index not found! Creating one in {self.path}")
             return self.build()
 
-
     def build(self):
         input_file = "server/data/preprocessed_test_100k.csv"
         lexiconObj = Lexicon()
         lexicon = lexiconObj.lexicon
         df = pd.read_csv(input_file)
-        df.fillna({'title':'','abstract':'','keywords':''}, inplace=True)
+        df.fillna({'title': '', 'abstract': '', 'keywords': ''}, inplace=True)
         forward_index = {}
 
-        for _,row in df.iterrows():
+        total_doc_length = 0
+
+        for _, row in df.iterrows():
             doc_id = row['id']
-            #computing the total length of the document
+            # computing the total length of the document
             total_length = len(row['title'].split()) + len(row['abstract'].split())
 
-            # subdive the words into three sections
+            # subdivide the words into three sections
             sections = [
-                (row['title'].split(), 0),   
-                (row['abstract'].split(), 1),  
-                (row['keywords'].split(), 2)   
+                (row['title'].split(), 0),
+                (row['abstract'].split(), 1),
+                (row['keywords'].split(), 2)
             ]
             
             # information for each word
@@ -59,15 +60,29 @@ class ForwardIndex:
             
             # set the word_dict and total length to the doc_id
             forward_index[doc_id] = {
-                "word_data":dict(word_dict),
-                "length":total_length
+                "word_data": dict(word_dict),
+                "length": total_length
             }
 
-        # Save forward index to a json file
-        with open(self.path,'w') as j:
-            json.dump(forward_index,j,indent=1)
+            # Update total_doc_length
+            total_doc_length += total_length
 
+        # Save forward index to a json file
+        with open(self.path, 'w') as j:
+            json.dump(forward_index, j, indent=1)
+
+        # Create and save metadata
+        metadata = {
+            "total_doc_length": total_doc_length,
+            "forward_index_length": len(forward_index)
+        }
+
+        with open("server/data/metadata.json", "w") as meta_file:
+            json.dump(metadata, meta_file, indent=1)
+        
         print(f"Forward index saved to {self.path}")
+        print(f"Metadata saved to server/data/metadata.json")
+        
         return forward_index
 
     def append_to_forward_index(self, new_doc):
@@ -109,11 +124,23 @@ class ForwardIndex:
         # Save the updated forward index back to the file
         with open(self.path, 'w') as f:
             json.dump(self.data, f, indent=1)
-        
+
+        # Update the metadata as well
+        total_doc_length = sum([doc['length'] for doc in self.data.values()])
+        metadata = {
+            "total_doc_length": total_doc_length,
+            "forward_index_length": len(self.data)
+        }
+
+        with open("server/data/metadata.json", "w") as meta_file:
+            json.dump(metadata, meta_file, indent=1)
+
         print(f"New document with ID {doc_id} added to the forward index.")
+        print(f"Metadata updated in server/data/metadata.json.")
 
 if __name__ == "__main__":
     start_time = time.time()
-    forward_index = ForwardIndex().data
+    forward_index = ForwardIndex()
+    forward_index.build()
     end_time = time.time()
     print(f"Forward Index built in {end_time - start_time} seconds")
