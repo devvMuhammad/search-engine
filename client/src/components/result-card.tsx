@@ -55,16 +55,12 @@ const highlightText = (text: string, query: string) => {
   const queryStems = query.toLowerCase().split(" ").map(getWordStem);
   return text.split(" ").map((word, index) => {
     const wordStem = getWordStem(word);
-
     const isMatch = queryStems.some((stem) => wordStem.includes(stem));
-    return isMatch ? (
-      <>
-        <mark key={word + index} className="bg-yellow-200">
-          {word}
-        </mark>{" "}
-      </>
-    ) : (
-      word + " "
+
+    return (
+      <span key={`${word}-${index}`}>
+        {isMatch ? <mark className="bg-yellow-200">{word}</mark> : word}{" "}
+      </span>
     );
   });
 };
