@@ -60,15 +60,17 @@ class Barrels:
     def load_barrel(self, query_word):
         """Load the barrel containing the query word."""
         
-        word_id = str(self.lexicon.get_word_id(query_word))
+        word_id = self.lexicon.get_word_id(query_word)
         barrel_id = self.hash_to_barrel(str(word_id))
         # print(f"Loading barrel {barrel_id} for word {query_word} with id {word_id}")
         barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
         print(f"Loading barrel {barrel_id} for word {query_word}")
+        print(f"Barrel path: {barrel_path}")
         try:
             with open(barrel_path, 'r') as f:
                 barrel = json.load(f)
-            return barrel[word_id]
+                # print(barrel[str(word_id)])
+                return barrel[str(word_id)]
         except Exception as e:
             print(f"Error loading barrel {barrel_id}: {e}")
             return None
