@@ -4,7 +4,7 @@ import math
 import time
 from server.entities.lexicon import Lexicon
 from server.entities.barrels import Barrels
-from server.entities.docindex import DocumentIndex
+# from server.entities.docindex import DocumentIndex
 
 # BM25 parameters
 k1 = 1.5  # Term frequency saturation parameter
@@ -25,12 +25,21 @@ lexicon = Lexicon().lexicon
 end = time.time()
 print("time for loading lexicon: ", end - start)
 
+
+
 def load_document_metadata():
     try:
         with open("server/data/metadata.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
         raise Exception("Required metadata.json file not found")
+
+# Initialize metadata
+metadata = load_document_metadata()
+#doc_lengths = metadata["doc_lengths"]
+total_doc_length = metadata["total_doc_length"]
+forward_index_length = metadata["forward_index_length"]
+avg_doc_length = total_doc_length / forward_index_length
 
 def calculate_safe_distance(doc_length):
     """Calculate safe distance based on document length"""
@@ -48,7 +57,7 @@ def calculate_proximity_score(positions1, positions2, safe_distance):
         return 1.0 - (min_distance / safe_distance)
     return 0.0
 
-def calculate_bm25(query_terms):
+def calculate_bm25(query_terms, words_count):
     timing_logs = []
     total_start = time.time()
     
@@ -57,28 +66,36 @@ def calculate_bm25(query_terms):
     term_positions = defaultdict(lambda: defaultdict(list))
     doc_lengths = {}  # Store doc lengths from barrel entries
     
-    barrel_start = time.time()
-    barrels_obj = Barrels()
-    timing_logs.append(f"Barrel initialization: {time.time() - barrel_start:.4f} seconds")
+    barrels_obj = Barrels(words_count)
 
     # First pass: Basic BM25 calculation and position collection
+    barrels_loading_time = 0
+    bm25_calc_time = 0
+    bme25_start = time.time()
     for term in query_terms:
         if term not in lexicon:
             continue
             
         word_id = str(lexicon[term]["id"])
-        docs = barrels_obj.load_barrel(term)
+        barrel_start = time.time()
+        docs = barrels_obj.load_barrel(word_id)
+        print(f"loading barel for word {term}: {time.time() - barrel_start:.4f} seconds")
+        barrel_end = time.time()
+        barrels_loading_time += (barrel_end - barrel_start)
         
+
         if not docs:
             continue
 
+        bm25_start = time.time()
         df = len(docs)
+        print("term: ", term, "df: ", df)
         idf = math.log((N - df + 0.5) / (df + 0.5) + 1)
 
         for doc in docs:
             doc_id = doc["doc_id"]
             term_positions[doc_id][term].extend(doc.get("positions", []))
-            doc_lengths[doc_id] = doc.get("doc_length", avg_doc_length)  # Get doc length from barrel
+            doc_lengths[doc_id] = doc.get("length", avg_doc_length)  # Get doc length from barrel
             
             # Calculate section-weighted frequency
             f = (
@@ -90,8 +107,17 @@ def calculate_bm25(query_terms):
             numerator = f * (k1 + 1)
             denominator = f + k1 * (1 - b + b * (doc_lengths[doc_id] / avg_doc_length))
             bm25_scores[doc_id] += idf * (numerator / denominator)
+        bm25_calc_time += time.time() - bm25_start
+
+
+    timing_logs.append(f"BM25 calculation: {bm25_calc_time} seconds")
+    timing_logs.append(f"Barrels loading: {barrels_loading_time} seconds")
 
     # Second pass: Proximity boost calculation
+    if len(query_terms) < 2:
+        sorted_scores = sorted(bm25_scores.items(), key=lambda x: x[1], reverse=True)
+        timing_logs.append(f"Total calculation time: {time.time() - total_start:.4f} seconds")
+        return sorted_scores, timing_logs
     proximity_start = time.time()
     for doc_id in bm25_scores.keys():
         doc_length = doc_lengths.get(doc_id, avg_doc_length)
@@ -122,44 +148,39 @@ def calculate_bm25(query_terms):
     
     sorted_scores = sorted(bm25_scores.items(), key=lambda x: x[1], reverse=True)
     timing_logs.append(f"Total calculation time: {time.time() - total_start:.4f} seconds")
+
+    print("timing_logs: ", timing_logs)
     
     return sorted_scores, timing_logs
 
-def write_results_to_file(results, query_terms, timing_logs):
-    write_start = time.time()
-    with open('result.txt', 'w', encoding='utf-8') as f:
-        f.write(f"Search Results for: {' '.join(query_terms)}\n")
-        f.write("=" * 80 + "\n\n")
+# def write_results_to_file(results, query_terms, timing_logs):
+#     write_start = time.time()
+#     with open('result.txt', 'w', encoding='utf-8') as f:
+#         f.write(f"Search Results for: {' '.join(query_terms)}\n")
+#         f.write("=" * 80 + "\n\n")
         
-        f.write("Timing Information:\n")
-        f.write("-" * 80 + "\n")
-        for log in timing_logs:
-            f.write(f"{log}\n")
-        f.write("-" * 80 + "\n\n")
+#         f.write("Timing Information:\n")
+#         f.write("-" * 80 + "\n")
+#         for log in timing_logs:
+#             f.write(f"{log}\n")
+#         f.write("-" * 80 + "\n\n")
         
-        with DocumentIndex() as doc_index:
+#         with DocumentIndex() as doc_index:
         
-            for doc_id, score in results[:50]:
-                doc = doc_index.get_document(doc_id)
-                if doc:
-                    f.write(f"Doc ID: {doc_id}\n")
-                    f.write(f"Score: {score:.4f}\n")
-                    f.write(f"Title: {doc['title']}\n")
-                    f.write(f"Keywords: {doc['keywords']}\n")
-                    f.write(f"Year: {doc['year']}\n")
-                    f.write(f"Venue: {doc['venue']}\n")
-                    f.write(f"Citations: {doc['n_citation']}\n")
-                    f.write(f"Abstract: {doc['abstract']}\n")
-                    f.write("-" * 80 + "\n\n")
+#             for doc_id, score in results[:50]:
+#                 doc = doc_index.get_document(doc_id)
+#                 if doc:
+#                     f.write(f"Doc ID: {doc_id}\n")
+#                     f.write(f"Score: {score:.4f}\n")
+#                     f.write(f"Title: {doc['title']}\n")
+#                     f.write(f"Keywords: {doc['keywords']}\n")
+#                     f.write(f"Year: {doc['year']}\n")
+#                     f.write(f"Venue: {doc['venue']}\n")
+#                     f.write(f"Citations: {doc['n_citation']}\n")
+#                     f.write(f"Abstract: {doc['abstract']}\n")
+#                     f.write("-" * 80 + "\n\n")
         
-    print(f"Writing results: {time.time() - write_start:.4f} seconds")
-
-# Initialize metadata
-metadata = load_document_metadata()
-#doc_lengths = metadata["doc_lengths"]
-total_doc_length = metadata["total_doc_length"]
-forward_index_length = metadata["forward_index_length"]
-avg_doc_length = total_doc_length / forward_index_length
+#     print(f"Writing results: {time.time() - write_start:.4f} seconds")
 
 if __name__ == "__main__":
     while True:

@@ -6,16 +6,11 @@ import ijson
 
 
 class Barrels:
-    def __init__(self):
+    def __init__(self, words_count):
         self.inverted_index_path = "server/data/inverted_index.json"
         self.barrels_dir = "server/data/barrels"
         self.__ensure_dir()
-        from server.entities.lexicon import Lexicon
-        lexicon = Lexicon()
-         
-        words_count = len(lexicon.lexicon)
-        self.num_barrels = words_count // 1000
-        self.lexicon = lexicon
+        self.num_barrels = words_count // 500
 
     def __ensure_dir(self):
         """Ensure the barrels directory exists."""
@@ -57,14 +52,12 @@ class Barrels:
             barrel_files[i].write('\n}')
             barrel_files[i].close()
 
-    def load_barrel(self, query_word):
+    def load_barrel(self, word_id):
         """Load the barrel containing the query word."""
         
-        word_id = self.lexicon.get_word_id(query_word)
         barrel_id = self.hash_to_barrel(str(word_id))
         # print(f"Loading barrel {barrel_id} for word {query_word} with id {word_id}")
         barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
-        print(f"Loading barrel {barrel_id} for word {query_word}")
         print(f"Barrel path: {barrel_path}")
         try:
             with open(barrel_path, 'r') as f:
@@ -104,12 +97,17 @@ def calculate_time(func):
 
 # Build barrels incrementally and measure the time taken
 if __name__ == "__main__":
+    from server.entities.lexicon import Lexicon
+    lexicon = Lexicon()
+         
+    words_count = len(lexicon.lexicon)
+    num_barrels = words_count // 500
    
-    barrels = Barrels()
+    barrels = Barrels(words_count)
     
     calculate_time(barrels.build)()
 
-    barrels.load_barrel("lisp")
+    barrels.load_barrel(lexicon["lisp"])
 
 def update_barrels(self, new_doc_id, new_postings):
     """Update barrels when a new document is added to the index."""

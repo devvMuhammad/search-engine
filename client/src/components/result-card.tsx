@@ -53,9 +53,16 @@ interface ResultCardProps {
 // Modify highlightText function
 const highlightText = (text: string, query: string) => {
   const queryStems = query.toLowerCase().split(" ").map(getWordStem);
+  // const queryStems = query.toLowerCase().split(" ");
   return text.split(" ").map((word, index) => {
     const wordStem = getWordStem(word);
-    const isMatch = queryStems.some((stem) => wordStem.includes(stem));
+    let isMatch;
+    try {
+      isMatch = queryStems.some((stem) => wordStem.includes(stem));
+    } catch (err) {
+      console.log("Error in highlightText:", err);
+      isMatch = false;
+    }
 
     return (
       <span key={`${word}-${index}`}>
@@ -94,6 +101,8 @@ export default function ResultCard({ result, query }: ResultCardProps) {
   );
   const primaryLink = validLinks[0] || "#";
 
+  // return <pre>{JSON.stringify(result, null, 2)}</pre>;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -105,12 +114,14 @@ export default function ResultCard({ result, query }: ResultCardProps) {
           <CardTitle className="text-xl font-bold text-blue-600 hover:underline">
             <Link href={primaryLink} target="_blank">
               {highlightText(result.title, query)}
+              {/* {result.title} */}
             </Link>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-600 mb-4">
             {highlightText(result.abstract, query)}
+            {/* {result.abstract} */}
           </p>
           <div className="flex flex-wrap gap-2 mb-4">
             {keywordsArray.map((keyword: string, index: number) => (
@@ -120,6 +131,7 @@ export default function ResultCard({ result, query }: ResultCardProps) {
                 className="bg-gray-200 text-gray-700"
               >
                 {highlightText(keyword.trim(), query)}
+                {/* {keyword.trim()} */}
               </Badge>
             ))}
           </div>

@@ -49,7 +49,10 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center mb-8">
           Research Search Engine
         </h1>
-        <SearchBar query={query} setQuery={setQuery} onSearch={handleSearch} />
+        <SearchBar
+          // query={query} setQuery={setQuery}
+          onSearch={handleSearch}
+        />
         <div className="mt-8">
           {!isLoading && searchTime > 0 && (
             <p className="text-sm text-gray-600 mb-4">
