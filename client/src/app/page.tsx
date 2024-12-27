@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion";
 import SearchBar from "@/components/search-bar";
 import ResultCard from "@/components/result-card";
 import SkeletonCard from "@/components/skeleton-card";
+// import { DockDemo } from "@/components/dock";
 
 type ResultType = {
   abstract: string;
@@ -31,7 +32,7 @@ export default function Home() {
     setResults([]);
     const start = new Date().getTime();
 
-    fetch(`http://127.0.0.1:5000/search?q=${query}`)
+    fetch(`http://localhost:4000/search?q=${query}`)
       .then((res) => res.json())
       .then((data) => {
         setIsLoading(false);
@@ -44,8 +45,9 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-100 text-gray-800">
+    <main className="min-h-screen">
       <div className="container mx-auto px-4 py-16">
+        {/* <DockDemo /> */}
         <h1 className="text-4xl font-bold text-center mb-8">
           Research Search Engine
         </h1>
@@ -66,11 +68,11 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <motion.div
+            <div
               className="space-y-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
+              // initial={{ opacity: 0 }}
+              // animate={{ opacity: 1 }}
+              // transition={{ duration: 0.5 }}
             >
               {results.length > 0
                 ? results.map((result, i) => (
@@ -81,7 +83,7 @@ export default function Home() {
                       No results found
                     </p>
                   )}
-            </motion.div>
+            </div>
           )}
         </div>
       </div>

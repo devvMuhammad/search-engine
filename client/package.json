@@ -9,7 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
+    "@radix-ui/react-label": "^2.1.1",
+    "@radix-ui/react-separator": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-toast": "^1.2.4",
+    "@radix-ui/react-tooltip": "^1.1.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
@@ -17,9 +22,11 @@
     "next": "15.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
     "react-virtualized": "^9.22.5",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^20",

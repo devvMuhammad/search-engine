@@ -25,8 +25,6 @@ lexicon = Lexicon().lexicon
 end = time.time()
 print("time for loading lexicon: ", end - start)
 
-
-
 def load_document_metadata():
     try:
         with open("server/data/metadata.json", "r") as f:
@@ -57,6 +55,12 @@ def calculate_proximity_score(positions1, positions2, safe_distance):
         return 1.0 - (min_distance / safe_distance)
     return 0.0
 
+start = time.time()
+with open("server/data/barrel_metadata.json", "r") as f:
+    barrels_metadata = json.load(f)
+end = time.time()
+print(f"Time taken to load barrel metadata: {end - start:.4} seconds")
+
 def calculate_bm25(query_terms, words_count):
     timing_logs = []
     total_start = time.time()
@@ -77,10 +81,15 @@ def calculate_bm25(query_terms, words_count):
             continue
             
         word_id = str(lexicon[term]["id"])
+        barrel_id = barrels_metadata[word_id]
         barrel_start = time.time()
-        docs = barrels_obj.load_barrel(word_id)
-        print(f"loading barel for word {term}: {time.time() - barrel_start:.4f} seconds")
+
+        docs = barrels_obj.get_barrel(barrel_id)[word_id]
+        print(f"loading barrel for word with id {barrel_id} {term}: {time.time() - barrel_start:.4f} seconds")
         barrel_end = time.time()
+
+        # print(docs)
+
         barrels_loading_time += (barrel_end - barrel_start)
         
 

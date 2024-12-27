@@ -6,6 +6,7 @@ from server.functions.rank import calculate_bm25
 from server.entities.lexicon import Lexicon
 from server.functions.autosuggest import Autosuggestion
 from server.lib.utils import preprocess_text
+import json
 
 lexicon = Lexicon().lexicon
 words_list = list(lexicon.keys())
@@ -24,10 +25,10 @@ with DocumentIndex() as doc_index:
             if not query:
                 return jsonify({"error": "No query provided"}), 400
 
-            query_terms = preprocess_text(query)
+            query_terms = preprocess_text(query).split(" ")
 
             start = time.time()
-            results, logs = calculate_bm25(query.split(" "), len(lexicon))
+            results, logs = calculate_bm25(query_terms, len(lexicon))
             end = time.time()
             print(f"BM25 calculation took {end - start:.4} seconds")
 
@@ -35,7 +36,7 @@ with DocumentIndex() as doc_index:
             
             start = time.time()
             # Simply use the global instance directly
-            doc_ids = [doc_id for doc_id, _ in results][:1000]
+            doc_ids = [doc_id for doc_id, _ in results][:50]
             documents = doc_index.get_documents(doc_ids)
             
             for (doc_id, score), doc in zip(results, documents):
@@ -60,7 +61,7 @@ with DocumentIndex() as doc_index:
 
             return jsonify({
                 "results_count": len(results),
-                "query": query_terms,
+                "query": " ".join(query_terms),
                 "results": formatted_results[:50]
             }), 200
 

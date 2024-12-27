@@ -52,6 +52,63 @@ class Barrels:
             barrel_files[i].write('\n}')
             barrel_files[i].close()
 
+    def build_barrels():
+        ensure_barrel_dir()
+        word_locations = {}
+        current_barrel = 0
+        current_barrel_path = create_new_barrel(current_barrel)
+        
+        first_entry = True
+        current_file = open(current_barrel_path, 'a')
+
+        try:
+            with open(INVERTED_INDEX_PATH, 'r') as f:
+                parser = ijson.kvitems(f, '')
+                
+                for word_id, postings in parser:
+                    # Estimate size of new entry
+                    new_entry = f'{"," if not first_entry else ""}\n  "{word_id}": {json.dumps(postings)}'
+                    estimated_new_size = get_file_size(current_barrel_path) + len(new_entry.encode('utf-8'))
+                    
+                    # If adding this entry would exceed threshold, create new barrel
+                    if estimated_new_size >= BARREL_SIZE_THRESHOLD +  500 * 1024:
+                        current_file.write('\n}')
+                        current_file.close()
+                        
+                        current_barrel += 1
+                        current_barrel_path = create_new_barrel(current_barrel)
+                        current_file = open(current_barrel_path, 'a')
+                        first_entry = True
+                    
+                    # Track word location
+                    word_locations[word_id] = current_barrel
+                    
+                    # Write entry
+                    if not first_entry:
+                        current_file.write(',\n')
+                    else:
+                        first_entry = False
+                    
+                    current_file.write(f'  "{word_id}": {json.dumps(postings)}')
+
+            # Close final barrel
+            current_file.write('\n}')
+            current_file.close()
+            
+            with open(BARREL_METADATA_PATH, 'w') as f:
+                json.dump(word_locations, f, indent=1)
+                
+        except Exception as e:
+            print(f"Error building barrels: {e}")
+            if not current_file.closed:
+                current_file.close()
+                
+        return current_barrel + 1
+        
+    def get_barrel(self, barrel_id):
+        with open(f"server/data/test_barrels/barrel_{str(barrel_id)}.json", 'r') as f:
+            return json.load(f)
+
     def load_barrel(self, word_id):
         """Load the barrel containing the query word."""
         
@@ -105,9 +162,9 @@ if __name__ == "__main__":
    
     barrels = Barrels(words_count)
     
-    calculate_time(barrels.build)()
+    calculate_time(barrels.build_barrels)()
 
-    barrels.load_barrel(lexicon["lisp"])
+    # barrels.load_barrel(lexicon["lisp"])
 
 def update_barrels(self, new_doc_id, new_postings):
     """Update barrels when a new document is added to the index."""
@@ -136,7 +193,7 @@ def update_barrels(self, new_doc_id, new_postings):
                 
                  # Re-save the updated barrel
                     f.seek(0)
-                    json.dump(barrel, f, indent=2)
+                    json.dump(barrel, f)
         else:
             # If the barrel does not exist, create it
             with open(barrel_path, 'w') as f:
@@ -144,5 +201,5 @@ def update_barrels(self, new_doc_id, new_postings):
                     "doc_id": new_doc_id,
                     "frequency": metadata["frequency"],
                     "positions": metadata["positions"]
-                }]}, f, indent=2)
+                }]}, f)
         print(f"Barrels updated for new document {new_doc_id}")

@@ -87,5 +87,12 @@ if __name__ == "__main__":
     lexicon = Lexicon()
     start = time.time()
     lexicon.build()
+
+    # rank all words by frequency
+    sorted_lexicon = sorted(lexicon.lexicon.items(), key=lambda x: x[1]["frequency"], reverse=True)
+    print("Top 10 words by frequency:")
+    for i in range(50):
+        print(sorted_lexicon[i])
+
     end = time.time()
     print(f"Lexicon built in {end-start:.2f} seconds.")
