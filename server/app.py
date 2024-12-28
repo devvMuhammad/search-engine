@@ -7,6 +7,9 @@ from server.entities.lexicon import Lexicon
 from server.functions.autosuggest import Autosuggestion
 from server.lib.utils import preprocess_text
 import json
+from fuzzywuzzy import fuzz, process
+from flask import request, jsonify
+from server.functions.addcontent import AddContent
 
 lexicon = Lexicon().lexicon
 words_list = list(lexicon.keys())
@@ -125,6 +128,53 @@ with DocumentIndex() as doc_index:
         except Exception as e:
             print(e)
             return jsonify({"error": str(e)}), 500
+    
+    
 
-    if __name__ == '__main__':
-        app.run(debug=True, port=5000)
+    @app.route('/add', methods=['POST'])
+    def add_document():
+        try:
+            # Get request payload
+            doc = request.get_json()
+            if not doc:
+                return jsonify({
+                    "error": "No data provided or invalid JSON",
+                    "success": False
+                }), 400
+            # Validate required fields
+            required_fields = ['title', 'abstract', 'keywords', 'venue', 'year']
+            missing_fields = [field for field in required_fields if field not in doc]
+            
+            if missing_fields:
+                return jsonify({
+                    "error": f"Missing required fields: {', '.join(missing_fields)}",
+                    "success": False
+                }), 400
+            # Initialize AddContent and add document
+            adder = AddContent()
+            success = adder.add_document(doc)
+            if success:
+                return jsonify({
+                    "message": "Document added successfully",
+                    "success": True
+                }), 200
+            else:
+                return jsonify({
+                    "message": "Failed to add document",
+                    "success": False
+                }), 500
+        except ValueError as ve:
+            print("ValueError", ve)
+            return jsonify({
+                "error": f"Invalid input: {str(ve)}",
+                "success": False
+            }), 400
+        except Exception as e:
+            print("Exception", e)
+            return jsonify({
+                "error": f"Server error: {str(e)}",
+                "success": False
+            }), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

@@ -244,7 +244,7 @@ class AddContent:
                 f.seek(0)
                 json.dump(metadata, f)
                 f.truncate()
-
+            print("metadata updated")
             return True
         except Exception as e:
             print(f"Error adding document: {e}")
