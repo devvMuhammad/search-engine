@@ -5,6 +5,8 @@ import time
 import ijson
 
 
+BARREL_SIZE_THRESHOLD = 500 * 1024  # Define the threshold size for barrels
+
 class Barrels:
     def __init__(self, words_count):
         self.inverted_index_path = "server/data/inverted_index.json"
@@ -52,23 +54,32 @@ class Barrels:
             barrel_files[i].write('\n}')
             barrel_files[i].close()
 
-    def build_barrels():
-        ensure_barrel_dir()
+    def get_file_size(self, file_path):
+        """Get the size of a file in bytes."""
+        return os.path.getsize(file_path)
+
+    def create_new_barrel(self, barrel_id):
+        """Create a new barrel file and return its path."""
+        barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
+        with open(barrel_path, 'w') as f:
+         return barrel_path
+
+    def build_barrels(self):
+        self.__ensure_dir()
         word_locations = {}
         current_barrel = 0
-        current_barrel_path = create_new_barrel(current_barrel)
+        current_barrel_path = self.create_new_barrel(current_barrel)
         
         first_entry = True
         current_file = open(current_barrel_path, 'a')
 
         try:
-            with open(INVERTED_INDEX_PATH, 'r') as f:
+            with open(self.inverted_index_path, 'r') as f:
                 parser = ijson.kvitems(f, '')
-                
                 for word_id, postings in parser:
                     # Estimate size of new entry
                     new_entry = f'{"," if not first_entry else ""}\n  "{word_id}": {json.dumps(postings)}'
-                    estimated_new_size = get_file_size(current_barrel_path) + len(new_entry.encode('utf-8'))
+                    estimated_new_size = self.get_file_size(current_barrel_path) + len(new_entry.encode('utf-8'))
                     
                     # If adding this entry would exceed threshold, create new barrel
                     if estimated_new_size >= BARREL_SIZE_THRESHOLD +  500 * 1024:
@@ -76,7 +87,7 @@ class Barrels:
                         current_file.close()
                         
                         current_barrel += 1
-                        current_barrel_path = create_new_barrel(current_barrel)
+                        current_barrel_path = self.create_new_barrel(current_barrel)
                         current_file = open(current_barrel_path, 'a')
                         first_entry = True
                     
@@ -95,6 +106,7 @@ class Barrels:
             current_file.write('\n}')
             current_file.close()
             
+            BARREL_METADATA_PATH = os.path.join(self.barrels_dir, 'barrel_metadata.json')
             with open(BARREL_METADATA_PATH, 'w') as f:
                 json.dump(word_locations, f, indent=1)
                 

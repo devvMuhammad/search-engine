@@ -1,10 +1,9 @@
 import json
 import os
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-import string
+import pandas as pd
+import uuid
 from server.entities.barrels import Barrels
-from server.entities.lexicon import Lexicon
+from server.lib.utils import preprocess_text
 
 class AddContent:
     def __init__(self):
@@ -43,15 +42,6 @@ class AddContent:
         if not os.path.exists(self.barrel_dir):
             os.makedirs(self.barrel_dir)
 
-    def preprocess_text(self, text):
-        """Clean and tokenize text"""
-        text = text.lower()
-        text = text.translate(str.maketrans("", "", string.punctuation))
-        tokens = word_tokenize(text)
-        stop_words = set(stopwords.words('english'))
-        tokens = [token for token in tokens if token not in stop_words]
-        return tokens
-
     def update_lexicon(self, word):
         """Add new word to lexicon if it does not exist"""
         with open(self.lexicon_path, 'r+') as f:
@@ -60,6 +50,7 @@ class AddContent:
                 if word not in lexicon:
                     new_id = len(lexicon)
                     lexicon[word] = {"frequency": 1, "id": new_id}
+                    print("term", word, new_id)
                 else:
                     lexicon[word]["frequency"] += 1
                     new_id = lexicon[word]["id"]
@@ -89,37 +80,56 @@ class AddContent:
                 f.write(',' + json.dumps({doc_id: word_freqs})[1:-1] + '}')
 
     def update_barrel(self, term_id, doc_id, frequencies, positions):
-        """Update appropriate barrel file"""
+        """Update barrel using metadata lookup approach"""
         try:
-            barrel_id = self.barrels.hash_to_barrel(str(term_id))
-            barrel_path = f"{self.barrel_dir}/barrel_{barrel_id}.json"
+            barrel_metadata_path = os.path.join(self.barrel_dir, 'barrel_metadata.json')
             
+            # Load barrel metadata
+            if os.path.exists(barrel_metadata_path):
+                with open(barrel_metadata_path, 'r') as f:
+                    barrel_metadata = json.load(f)
+            else:
+                barrel_metadata = {}
+
+            # Create posting entry
             posting = {
                 "doc_id": doc_id,
                 "frequency": frequencies,
                 "positions": positions
             }
-            
-            if not os.path.exists(barrel_path):
-                with open(barrel_path, 'w') as f:
-                    json.dump({str(term_id): [posting]}, f, indent=2)
-                return True
-            
-            try:
+
+            # Get barrel ID and update
+            barrel_id = self.barrels.hash_to_barrel(str(term_id))
+            barrel_path = os.path.join(self.barrel_dir, f"barrel_{barrel_id}.json")
+
+            # Update metadata if term not present
+            if str(term_id) not in barrel_metadata:
+                barrel_metadata[str(term_id)] = barrel_id
+                with open(barrel_metadata_path, 'w') as f:
+                    json.dump(barrel_metadata, f, indent=2)
+
+            # Update barrel content
+            if os.path.exists(barrel_path):
                 with open(barrel_path, 'r+') as f:
-                    data = json.load(f)
-                    if str(term_id) not in data:
-                        data[str(term_id)] = []
-                    data[str(term_id)].append(posting)
-                    f.seek(0)
-                    json.dump(data, f, indent=2)
-                    f.truncate()
-                return True
-            except json.JSONDecodeError:
+                    try:
+                        data = json.load(f)
+                        if str(term_id) not in data:
+                            data[str(term_id)] = []
+                        data[str(term_id)].append(posting)
+                        f.seek(0)
+                        json.dump(data, f, indent=2)
+                        f.truncate()
+                    except json.JSONDecodeError:
+                        data = {str(term_id): [posting]}
+                        f.seek(0)
+                        json.dump(data, f, indent=2)
+                        f.truncate()
+            else:
                 with open(barrel_path, 'w') as f:
                     json.dump({str(term_id): [posting]}, f, indent=2)
-                return True
-                
+
+            return True
+
         except Exception as e:
             print(f"Error updating barrel: {e}")
             return False
@@ -144,10 +154,41 @@ class AddContent:
                 json.dump({doc_id: score}, f, indent=4)
                 f.truncate()
 
+    def _generate_doc_id(self):
+        """Generate unique document ID using UUID"""
+        return f"doc_{str(uuid.uuid4())}"
+    
+    def document_exists(self, doc_id):
+        """Check if document already exists efficiently"""
+        try:
+            # Check CSV first using pandas read with specific columns
+            df = pd.read_csv(self.dataset_path, usecols=['id'])
+            if doc_id in df['id'].values:
+                return True
+                
+            # Check document index without loading full file
+            doc_index_path = "server/data/document_index.json"
+            if os.path.exists(doc_index_path):
+                with open(doc_index_path, 'r') as f:
+                    for line in f:
+                        if doc_id in line:
+                            return True
+            return False
+            
+        except Exception as e:
+            print(f"Error checking document existence: {e}")
+            return False
+ 
     def add_document(self, doc):
         """Process and add new document"""
         try:
-            doc_id = doc['doc_id']
+            # Generate unique doc_id first
+            doc_id = self._generate_doc_id()
+            print(f"Generated document ID: {doc_id}")
+            if self.document_exists(doc_id):
+             print(f"Document {doc_id} already exists. Generating new ID...")
+             return self.add_document(doc)  # Retry with new ID
+            
             word_freqs = {}
             positions_dict = {}
             
@@ -158,10 +199,9 @@ class AddContent:
             ]
             
             for text, section_id in sections:
-                tokens = self.preprocess_text(text)
-                for pos, word in enumerate(tokens):
+                tokens = preprocess_text(text)
+                for pos, word in enumerate(tokens.split()):
                     term_id = self.update_lexicon(word)
-                    print("new term", word, term_id)
                     if term_id not in word_freqs:
                         word_freqs[term_id] = [0, 0, 0]
                         positions_dict[term_id] = []
@@ -170,17 +210,31 @@ class AddContent:
                     positions_dict[term_id].append(pos)
             
             self.append_forward_index(doc_id, word_freqs)
+
+            # Convert document to DataFrame row
+            new_row = pd.DataFrame([{
+                 'id': doc_id,
+        'title': doc["title"],
+        'keywords': str(doc["keywords"]),
+        'venue': str(doc["venue"]),
+        'year': doc["year"],
+        'n_citation': doc["n_citation"],
+        'url': str(doc["url"]),
+        'abstract': doc["abstract"],
+        'authors': str(doc["authors"]),
+        'doc_type': doc["doc_type"],
+        'references': str(doc["references"])
+            }])
+            
+            # Append to CSV without writing headers
+            new_row.to_csv(self.dataset_path, mode='a', header=False, index=False)
             
             for term_id in word_freqs:
                 self.update_barrel(term_id, doc_id, word_freqs[term_id], positions_dict[term_id])
             
             self.append_document_index(doc_id, doc.get('score', 0))
             
-            # Add to dataset CSV
-            with open(self.dataset_path, 'a', encoding='utf-8') as f:
-            # Format CSV line with proper escaping
-              csv_line = f'{doc_id},"{doc["title"]}","{doc["abstract"]}","{",".join(doc["keywords"])}","{doc["venue"]}",{doc["year"]},{doc["n_citation"]},"{doc.get("url", "")}"\n'
-              f.write(csv_line)
+    
 
             with open(self.metadata_path, 'r+') as f:
                 metadata = json.load(f)
@@ -192,10 +246,13 @@ class AddContent:
                 f.truncate()
 
             return True
-            
         except Exception as e:
             print(f"Error adding document: {e}")
             return False
+    
+          
+            
+        
 
     def add_documents(self, documents):
         """Add multiple documents"""
@@ -208,14 +265,27 @@ class AddContent:
 
 if __name__ == "__main__":
     test_doc = {
-        "doc_id": "test_001",
-        "title": "Refactoring UML Models",
-        "abstract": "Software developers spend most of their time modifying and maintaining existing products.",
-        "keywords": ["basic transformation", "whole model", "structural modification"],
-        "venue": "The Unified Modeling Language",
-        "year": 2001,
-        "n_citation": 360,
-        "url": "http://dx.doi.org/10.1007/3-540-45441-1_11",
+         "title": "Deep Learning for Natural Language Processing",
+            "keywords": ["neural networks", "NLP", "machine learning", "transformers"],
+            "venue": {"raw": "International Conference on Machine Learning 2023"},
+            "year": 2023,
+            "n_citation": 45,
+            "url": ["https://example.com/deep-learning-nlp"],
+            "abstract": "This paper presents a comprehensive survey of deep learning techniques applied to natural language processing tasks.",
+            "authors": [
+                {
+                    "id": "author_002",
+                    "name": "Jane Smith",
+                    "org": "AI Research Institute"
+                },
+                {
+                    "id": "author_003",
+                    "name": "Bob Wilson",
+                    "org": "Tech University"
+                }
+            ],
+            "doc_type": "Conference",
+            "references": ["ref_002", "ref_003", "ref_004"]
     }
 
     print("\n=== Testing Add Content functionality ===\n")
