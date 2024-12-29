@@ -1,7 +1,7 @@
 import time
 import json
 
-barrel_path = "../data/test_barrels/barrel_38.json"
+barrel_path = "../data/barrels/barrel_38.json"
 start = time.time()
 
 with open(barrel_path, 'r') as f:

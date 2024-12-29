@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 BARREL_SIZE_THRESHOLD = 1.5 * 1024 * 1024  # 2MB
-BARREL_DIR = "server/data/test_barrels"
+BARREL_DIR = "server/data/barrels"
 INVERTED_INDEX_PATH = "server/data/inverted_index.json"
 LEXICON_PATH = "server/data/lexicon.json"
 BARREL_METADATA_PATH = "server/data/barrel_metadata.json"

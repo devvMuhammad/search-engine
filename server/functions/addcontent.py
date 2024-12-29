@@ -9,7 +9,7 @@ class AddContent:
     def __init__(self):
         self.lexicon_path = "server/data/lexicon.json"
         self.forward_index_path = "server/data/forward_index.json"
-        self.barrel_dir = "server/data/barrels/"
+        self.barrel_dir = "server/data/barrels"
         self.dataset_path = "server/data/test_100k.csv"
         self.metadata_path = "server/data/metadata.json"
         
@@ -19,7 +19,7 @@ class AddContent:
         # Load lexicon and initialize counts
         self.lexicon = self._load_lexicon()
         self.words_count = len(self.lexicon)
-        self.barrels = Barrels(self.words_count)
+        self.barrels = Barrels()
 
     def _load_lexicon(self):
         """Load lexicon from file"""
@@ -209,29 +209,36 @@ class AddContent:
                     word_freqs[term_id][section_id] += 1
                     positions_dict[term_id].append(pos)
             
-            self.append_forward_index(doc_id, word_freqs)
+            # self.append_forward_index(doc_id, word_freqs)
+            
+            with open("server/data/barrel_metadata.json", 'r') as f:
+                barrel_metadata = json.load(f)
+                # last_barrel = barrel_metadata["last_barrel"]
+
+            with open("server/data/metadata.json", 'r') as f:
+                metadata = json.load(f)
+
+            for term_id in word_freqs:
+                barrels.add_word_to_barrel(term_id, doc_id, word_freqs[term_id], positions_dict[term_id], barrel_metadata, metadata)
+            
 
             # Convert document to DataFrame row
             new_row = pd.DataFrame([{
                  'id': doc_id,
-        'title': doc["title"],
-        'keywords': str(doc["keywords"]),
-        'venue': str(doc["venue"]),
-        'year': doc["year"],
-        'n_citation': doc["n_citation"],
-        'url': str(doc["url"]),
-        'abstract': doc["abstract"],
-        'authors': str(doc["authors"]),
-        'doc_type': doc["doc_type"],
-        'references': str(doc["references"])
+                'title': doc["title"],
+                'keywords': str(doc["keywords"]),
+                'venue': str(doc["venue"]),
+                'year': doc["year"],
+                'n_citation': doc["n_citation"],
+                'url': str(doc["url"]),
+                'abstract': doc["abstract"],
+                'authors': str(doc["authors"]),
+                'doc_type': doc["doc_type"],
+                'references': str(doc["references"])
             }])
             
             # Append to CSV without writing headers
             new_row.to_csv(self.dataset_path, mode='a', header=False, index=False)
-            
-            for term_id in word_freqs:
-                self.update_barrel(term_id, doc_id, word_freqs[term_id], positions_dict[term_id])
-            
             self.append_document_index(doc_id, doc.get('score', 0))
             
     
@@ -297,3 +304,5 @@ if __name__ == "__main__":
         print("Document added successfully.")
     else:
         print("Failed to add document.")
+
+

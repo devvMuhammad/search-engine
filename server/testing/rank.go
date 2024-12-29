@@ -103,7 +103,7 @@ func loadBarrelMetadata() (BarrelMetadata, error) {
 }
 
 func getDocs(barrel_number int, wordID string) ([]Posting, error) {
-	data, err := os.ReadFile(fmt.Sprintf("../data/test_barrels/barrel_%d.json", barrel_number))
+	data, err := os.ReadFile(fmt.Sprintf("../data/barrels/barrel_%d.json", barrel_number))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read barrel %d: %v", barrel_number, err)
 	}

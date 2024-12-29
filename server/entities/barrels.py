@@ -5,14 +5,14 @@ import time
 import ijson
 
 
-BARREL_SIZE_THRESHOLD = 500 * 1024  # Define the threshold size for barrels
+BARREL_SIZE_THRESHOLD = 2 * 1024 * 1024  # Define the threshold size for barrels
 
 class Barrels:
-    def __init__(self, words_count):
+    def __init__(self):
         self.inverted_index_path = "server/data/inverted_index.json"
         self.barrels_dir = "server/data/barrels"
         self.__ensure_dir()
-        self.num_barrels = words_count // 500
+        # self.num_barrels = words_count // 500
 
     def __ensure_dir(self):
         """Ensure the barrels directory exists."""
@@ -23,46 +23,48 @@ class Barrels:
         """Assign a word ID to a barrel based on its hash value."""
         return int(hashlib.md5(word_id.encode()).hexdigest(), 16) % self.num_barrels
 
-    def build(self):
-        """Incrementally partition the inverted index into barrels."""
-        # Open barrel files
-        barrel_files = {}
-        for i in range(self.num_barrels):
-            barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
-            barrel_files[i] = open(barrel_path, 'w')
-            barrel_files[i].write('{\n')  # Start the JSON file
+    # def build(self):
+    #     """Incrementally partition the inverted index into barrels."""
+    #     # Open barrel files
+    #     barrel_files = {}
+    #     for i in range(self.num_barrels):
+    #         barrel_path = os.path.join(self.barrels_dir, f"barrel_{i}.json")
+    #         barrel_files[i] = open(barrel_path, 'w')
+    #         barrel_files[i].write('{\n')  # Start the JSON file
 
-        # Array of flags to track the first entry for each barrel
-        first_entry = [True] * self.num_barrels
+    #     # Array of flags to track the first entry for each barrel
+    #     first_entry = [True] * self.num_barrels
 
-        # Incremental parsing using ijson
-        with open(self.inverted_index_path, 'r') as f:
-            parser = ijson.kvitems(f, '')
+    #     # Incremental parsing using ijson
+    #     with open(self.inverted_index_path, 'r') as f:
+    #         parser = ijson.kvitems(f, '')
 
-            for word_id, postings in parser:
-                barrel_id = self.hash_to_barrel(word_id)
+    #         for word_id, postings in parser:
+    #             barrel_id = self.hash_to_barrel(word_id)
 
-                if not first_entry[barrel_id]:
-                    barrel_files[barrel_id].write(',\n')
-                else:
-                    first_entry[barrel_id] = False
+    #             if not first_entry[barrel_id]:
+    #                 barrel_files[barrel_id].write(',\n')
+    #             else:
+    #                 first_entry[barrel_id] = False
 
-                barrel_files[barrel_id].write(f'  "{word_id}": {json.dumps(postings)}')
+    #             barrel_files[barrel_id].write(f'  "{word_id}": {json.dumps(postings)}')
 
-        # Close all barrel files
-        for i in range(self.num_barrels):
-            barrel_files[i].write('\n}')
-            barrel_files[i].close()
+    #     # Close all barrel files
+    #     for i in range(self.num_barrels):
+    #         barrel_files[i].write('\n}')
+    #         barrel_files[i].close()
 
     def get_file_size(self, file_path):
         """Get the size of a file in bytes."""
         return os.path.getsize(file_path)
 
-    def create_new_barrel(self, barrel_id):
-        """Create a new barrel file and return its path."""
-        barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
+    
+    def create_new_barrel(self, barrel_num):
+        barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_num}.json")
         with open(barrel_path, 'w') as f:
-         return barrel_path
+            f.write('{\n')  # Start JSON structure
+        return barrel_path
+
 
     def build_barrels(self):
         self.__ensure_dir()
@@ -114,13 +116,102 @@ class Barrels:
             print(f"Error building barrels: {e}")
             if not current_file.closed:
                 current_file.close()
-                
+
+        # save the last barrel id to the metadata file
+        with open("server/data/metadata.json", 'w+') as f:
+            metadaata = json.load(f)
+            metadaata["last_barrel"] = current_barrel
+            f.seek(0)
+            json.dump(metadaata, f, indent=1)
+            f.truncate()
+
         return current_barrel + 1
         
     def get_barrel(self, barrel_id):
-        with open(f"server/data/test_barrels/barrel_{str(barrel_id)}.json", 'r') as f:
+        with open(f"server/data/barrels/barrel_{str(barrel_id)}.json", 'r') as f:
             return json.load(f)
 
+    def add_word_to_barrel(self, term_id, doc_id, frequency, position, barrel_metadata, metadata):
+        # print(f"Adding word {term_id} to barrels")
+        # first check if the word is already in the barrels
+        if term_id in barrel_metadata:
+            barrel_id = barrel_metadata[term_id]
+            barrel_path = os.path.join(self.barrels_dir, f"barrel_{barrel_id}.json")
+            print("already in barrels with path", barrel_path)
+            with open(barrel_path, 'r+') as f:
+                barrel = json.load(f)
+                if term_id in barrel:
+                    barrel[term_id].append({
+                        "doc_id": doc_id,
+                        "frequency": frequency,
+                        "positions": position
+                    })
+                else:
+                    barrel[term_id] = [{
+                        "doc_id": doc_id,
+                        "frequency": frequency,
+                        "positions": position
+                    }]
+                f.seek(0)
+                json.dump(barrel, f)
+                f.truncate()
+            return metadata["last_barrel"]
+        
+
+        print("not in barrels")
+        # if the word is not in the barrels, fetch the last_barrel number from metadata.json
+        last_barrel = metadata["last_barrel"]
+        print(f"Last barrel: {last_barrel}")
+        # before adding the word to the barrel, check if the size of the barrel is less than the threshold
+        barrel_path = os.path.join(self.barrels_dir, f"barrel_{last_barrel}.json")
+        if os.path.exists(barrel_path):
+            print(f"Barrel {last_barrel} exists")
+            print(f"Size of barrel {last_barrel}: {self.get_file_size(barrel_path)}", BARREL_SIZE_THRESHOLD)
+            if self.get_file_size(barrel_path) < BARREL_SIZE_THRESHOLD:
+                print(f"Adding word {term_id} to existing barrel {last_barrel}")
+                with open(barrel_path, 'r+') as f:
+                    barrel = json.load(f)
+                    if term_id in barrel:
+                        barrel[term_id].append({
+                            "doc_id": doc_id,
+                            "frequency": frequency,
+                            "positions": position
+                        })
+                    else:
+                        barrel[term_id] = [{
+                            "doc_id": doc_id,
+                            "frequency": frequency,
+                            "positions": position
+                        }]
+                    f.seek(0)
+                    json.dump(barrel, f)
+                    f.truncate()
+            else:
+                print(f"Creating new barrel {last_barrel + 1} for word {term_id}")
+                last_barrel += 1
+                new_barrel_path = os.path.join(self.barrels_dir, f"barrel_{last_barrel}.json")
+                
+                with open(new_barrel_path, 'w') as f:
+                    json.dump({term_id: [{
+                        "doc_id": doc_id,
+                        "frequency": frequency,
+                        "positions": position
+                    }]}, f)
+                
+                metadata["last_barrel"] = last_barrel
+                with open("server/data/metadata.json", 'w') as f:
+                        f.seek(0)
+                        json.dump(metadata, f, indent=1)
+                        f.truncate()
+
+            barrel_metadata[term_id] = last_barrel
+            with open("server/data/barrel_metadata.json", 'w') as f:
+                    f.seek(0)
+                    json.dump(barrel_metadata, f, indent=1)
+                    f.truncate()
+
+
+    
     def load_barrel(self, word_id):
         """Load the barrel containing the query word."""
         
@@ -166,15 +257,22 @@ def calculate_time(func):
 
 # Build barrels incrementally and measure the time taken
 if __name__ == "__main__":
-    from server.entities.lexicon import Lexicon
-    lexicon = Lexicon()
-         
-    words_count = len(lexicon.lexicon)
-    num_barrels = words_count // 500
-   
-    barrels = Barrels(words_count)
+    barrels = Barrels()
     
     calculate_time(barrels.build_barrels)()
+
+    # with open("server/data/barrel_metadata.json", 'r') as f:
+    #     barrel_metadata = json.load(f)
+    #     # last_barrel = barrel_metadata["last_barrel"]
+
+    # with open("server/data/metadata.json", 'r') as f:
+    #     metadata = json.load(f)
+
+    # barrels.add_word_to_barrel("989898989", "test_doc", [69,69,69], [1,2,3,4], barrel_metadata, metadata)
+
+    # metadata["last_barrel"] = new_last_barrel
+    # with open("server/data/metadata.json", 'w') as f:
+    #     json.dump(metadata, f, indent=1)
 
     # barrels.load_barrel(lexicon["lisp"])
 

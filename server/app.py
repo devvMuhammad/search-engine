@@ -11,6 +11,12 @@ from fuzzywuzzy import fuzz, process
 from flask import request, jsonify
 from server.functions.addcontent import AddContent
 
+# loading at start
+# lexicon
+# doc_index
+# barrel_metadata
+# metadata
+
 lexicon = Lexicon().lexicon
 words_list = list(lexicon.keys())
 auto = Autosuggestion(words_list)
@@ -129,7 +135,38 @@ with DocumentIndex() as doc_index:
             print(e)
             return jsonify({"error": str(e)}), 500
     
-    
+
+    preprocess_test = preprocess_text("This is a test")
+    @app.route('/preprocess', methods=['POST'])
+    def preprocess_document():
+        try:
+            # Get request payload
+            doc = request.get_json()
+            if not doc:
+                return jsonify({
+                    "error": "No data provided or invalid JSON",
+                    "success": False
+                }), 400
+            required_fields = ['title', 'abstract', 'keywords']
+            print(doc['keywords'])
+            return jsonify({
+                "title": preprocess_text(doc['title']),
+                "abstract": preprocess_text(doc['abstract']),
+                "keywords": preprocess_text(" ".join(doc['keywords'])),
+                "success": True
+            }), 200
+        except ValueError as ve:
+            print("ValueError", ve)
+            return jsonify({
+                "error": f"Invalid input: {str(ve)}",
+                "success": False
+            }), 400
+        except Exception as e:
+            print("Exception", e)
+            return jsonify({
+                "error": f"Server error: {str(e)}",
+                "success": False
+            }), 500
 
     @app.route('/add', methods=['POST'])
     def add_document():
