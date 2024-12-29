@@ -14,7 +14,7 @@ class Lexicon:
     def __load(self):
         # check if the path exists
         if os.path.exists(self.path):
-            with open(self.path, 'r') as json_file:
+            with open(self.path, 'r', encoding="utf-8-sig") as json_file:
                 return json.load(json_file)
         # if does not exists, then build the lexicon and return it
         else:

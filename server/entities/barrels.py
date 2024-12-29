@@ -108,7 +108,7 @@ class Barrels:
             current_file.write('\n}')
             current_file.close()
             
-            BARREL_METADATA_PATH = os.path.join(self.barrels_dir, 'barrel_metadata.json')
+            BARREL_METADATA_PATH = os.path.join('server/data/barrel_metadata.json')
             with open(BARREL_METADATA_PATH, 'w') as f:
                 json.dump(word_locations, f, indent=1)
                 
@@ -119,7 +119,10 @@ class Barrels:
 
         # save the last barrel id to the metadata file
         with open("server/data/metadata.json", 'w+') as f:
-            metadaata = json.load(f)
+            try:
+                metadaata = json.load(f)
+            except json.JSONDecodeError:
+                metadaata = {"last_barrel": current_barrel}
             metadaata["last_barrel"] = current_barrel
             f.seek(0)
             json.dump(metadaata, f, indent=1)

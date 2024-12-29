@@ -29,6 +29,7 @@ type Metadata struct {
 	TotalDocLength  int     `json:"total_doc_length"`
 	ForwardIndexLen int     `json:"forward_index_length"`
 	AvgDocLength    float64 `json:"avg_doc_length"`
+	LastBarrel      int     `json:"last_barrel"`
 }
 
 // Document posting structure

@@ -56,7 +56,7 @@ def calculate_proximity_score(positions1, positions2, safe_distance):
     return 0.0
 
 start = time.time()
-with open("server/data/barrels/barrel_metadata.json", "r") as f:
+with open("server/data/barrel_metadata.json", "r") as f:
     barrels_metadata = json.load(f)
 end = time.time()
 print(f"Time taken to load barrel metadata: {end - start:.4} seconds")
