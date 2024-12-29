@@ -1,15 +1,11 @@
 "use client";
 
 import { AddDocumentForm } from "@/components/add-document-form";
-import { DockDemo } from "@/components/dock";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -36,14 +32,7 @@ export default function AddDocumentPage() {
             engine.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <AddDocumentForm />
-        </CardContent>
-        <CardFooter className="flex justify-end">
-          <Button type="submit" form="add-document-form">
-            Add Document
-          </Button>
-        </CardFooter>
+        <AddDocumentForm />
       </Card>
     </div>
   );

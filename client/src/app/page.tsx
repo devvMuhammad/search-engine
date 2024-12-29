@@ -1,15 +1,21 @@
 "use client";
 
-import { useState, useCallback } from "react";
-// import { motion } from "framer-motion";
+import { useState, useCallback, useMemo, useTransition } from "react";
 import SearchBar from "@/components/search-bar";
 import ResultCard from "@/components/result-card";
 import SkeletonCard from "@/components/skeleton-card";
-// import { DockDemo } from "@/components/dock";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type ResultType = {
   abstract: string;
-  citations: string;
+  n_citation: string;
   doc_id: string;
   keywords: string;
   score: number;
@@ -25,6 +31,8 @@ export default function Home() {
   const [firstRender, setFirstRender] = useState(true);
   const [results, setResults] = useState<ResultType[]>([]);
   const [searchTime, setSearchTime] = useState(0);
+  const [sortBy, setSortBy] = useState<"year" | "citations" | "def">("def");
+  const [isPending, startTransition] = useTransition();
 
   const handleSearch = useCallback(async (query: string) => {
     setFirstRender(false);
@@ -44,23 +52,59 @@ export default function Home() {
       });
   }, []);
 
+  const sortedResults = useMemo(() => {
+    if (sortBy === "def") return results;
+
+    return [...results].sort((a, b) => {
+      if (!a || !b) {
+        return 0;
+      }
+      if (sortBy === "year") {
+        return parseInt(b.year) - parseInt(a.year);
+      }
+      return parseInt(b.n_citation) - parseInt(a.n_citation);
+    });
+  }, [results, sortBy]);
+
   return (
     <main className="min-h-screen">
       <div className="container mx-auto px-4 py-16">
-        {/* <DockDemo /> */}
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Research Search Engine
-        </h1>
-        <SearchBar
-          // query={query} setQuery={setQuery}
-          onSearch={handleSearch}
-        />
+        <h1 className="text-4xl font-bold text-center mb-8">Info Hunt</h1>
+        <SearchBar onSearch={handleSearch} />
         <div className="mt-8">
-          {!isLoading && searchTime > 0 && (
-            <p className="text-sm text-gray-600 mb-4">
-              Search completed in {searchTime}ms
-            </p>
-          )}
+          <div className="flex justify-between items-center mb-4">
+            {!isLoading && searchTime > 0 && (
+              <p className="text-sm text-gray-600">
+                Search completed in {searchTime}ms
+              </p>
+            )}
+
+            {results.length > 0 && (
+              <Select
+                value={sortBy}
+                onValueChange={(val) => {
+                  startTransition(() => {
+                    setSortBy(val as "def" | "year" | "citations");
+                  });
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <div className="flex items-center gap-2">
+                    <SelectValue placeholder="Sort by..." />
+                    {isPending && (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
+                    )}
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="def">Default</SelectItem>
+                  <SelectItem value="year">Year</SelectItem>
+                  <SelectItem value="citations">Citations</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(6)].map((_, i) => (
@@ -68,15 +112,17 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div
-              className="space-y-4"
-              // initial={{ opacity: 0 }}
-              // animate={{ opacity: 1 }}
-              // transition={{ duration: 0.5 }}
-            >
-              {results.length > 0
-                ? results.map((result, i) => (
-                    <ResultCard key={i} result={result} query={query} />
+            <div className="space-y-4">
+              {sortedResults.length > 0
+                ? sortedResults.map((result, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        isPending && "opacity-50 transition-opacity"
+                      )}
+                    >
+                      <ResultCard result={result} query={query} />
+                    </div>
                   ))
                 : !firstRender && (
                     <p className="text-xl text-center text-gray-600 mt-8">

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AutoSuggestions from "@/components/suggestions";
 import { useDebounce } from "@/hooks/useDebounce";
+import Link from "next/link";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -123,7 +124,15 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
             ref={inputRef}
             className="flex-grow text-gray-800"
           />
-          <Button type="submit">Search</Button>
+
+          <Button type="submit" disabled={isLoading || query === ""}>
+            Search
+          </Button>
+          <Link href="/add">
+            <Button type="submit" variant="outline">
+              Publish
+            </Button>
+          </Link>
         </div>
         {showSuggestions && (isLoading || suggestions.length > 0) && (
           <AutoSuggestions

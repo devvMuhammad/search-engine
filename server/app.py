@@ -11,12 +11,6 @@ from fuzzywuzzy import fuzz, process
 from flask import request, jsonify
 from server.functions.addcontent import AddContent
 
-# loading at start
-# lexicon
-# doc_index
-# barrel_metadata
-# metadata
-
 lexicon = Lexicon().lexicon
 words_list = list(lexicon.keys())
 auto = Autosuggestion(words_list)

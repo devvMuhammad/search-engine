@@ -17,7 +17,7 @@ type LexiconEntry struct {
 type Lexicon map[string]LexiconEntry
 
 func loadLexicon() (Lexicon, error) {
-	lexiconPath := "../data/lexicon.json"
+	lexiconPath := "../server/data/lexicon.json"
 	data, err := os.ReadFile(lexiconPath)
 	if err != nil {
 		return nil, err
@@ -49,8 +49,8 @@ func loadForwardIndex(path string) (map[string]map[string]WordInfo, error) {
 }
 
 func buildForwardIndex() map[string]map[string]WordInfo {
-	inputFile := "../data/preprocessed_test_100k.csv"
-	forwardIndexPath := "../data/test_forward_index.json"
+	inputFile := "../server/data/preprocessed_test_100k.csv"
+	forwardIndexPath := "../server/data/test_forward_index.json"
 
 	file, err := os.Open(inputFile)
 	if err != nil {
@@ -149,10 +149,10 @@ func saveMetadata(totalDocLength, indexLength int) {
 	if err != nil {
 		panic(err)
 	}
-	if err := os.WriteFile("../data/metadata.json", data, 0644); err != nil {
+	if err := os.WriteFile("../server/data/metadata.json", data, 0644); err != nil {
 		panic(err)
 	}
-	fmt.Println("Metadata saved to ../data/metadata.json")
+	fmt.Println("Metadata saved to ../server/data/metadata.json")
 }
 
 func main() {

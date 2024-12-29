@@ -39,7 +39,7 @@ interface ResultCardProps {
   query: string;
   result: {
     abstract: string;
-    citations: string;
+    n_citation: string;
     doc_id: string;
     keywords: string;
     score: number;
@@ -47,7 +47,7 @@ interface ResultCardProps {
     venue: string;
     year: string;
     url: string;
-  };
+  } | null;
 }
 
 // Modify highlightText function
@@ -73,6 +73,7 @@ const highlightText = (text: string, query: string) => {
 };
 
 export default function ResultCard({ result, query }: ResultCardProps) {
+  if (!result) return null;
   let keywordsArray;
   try {
     keywordsArray = JSON.parse(result.keywords.replace(/'/g, '"'));
@@ -138,7 +139,7 @@ export default function ResultCard({ result, query }: ResultCardProps) {
           <div className="flex justify-between text-sm">
             <span className="text-green-600">Year: {result.year}</span>
             <span className="text-orange-600">
-              Citations: {result.citations}
+              Citations: {result.n_citation}
             </span>
           </div>
         </CardContent>

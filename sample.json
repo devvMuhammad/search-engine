@@ -1,0 +1,25 @@
+{
+  "title": "lorem20",
+  "keywords": ["gym", "wrestling", "awan", "nigga"],
+  "venue": {
+    "raw": "beast guy"
+  },
+  "year": 2004,
+  "citations": 69,
+  "url": "https://example.com/deep-learning-nlp",
+  "abstract": "all about me",
+  "authors": [
+    {
+      "id": "author_002",
+      "name": "Jane Smith",
+      "org": "AI Research Institute"
+    },
+    {
+      "id": "author_003",
+      "name": "Bob Wilson",
+      "org": "Tech University"
+    }
+  ],
+  "doc_type": "Novel",
+  "references": ["ref_002", "ref_003", "ref_004"]
+}

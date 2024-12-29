@@ -6,7 +6,7 @@ import numpy as np
 def process_dataset(file_path, output_csv, nrows=None):
     try:
         # specify the columns to extract
-        columns_to_extract = ['id', 'title', 'abstract','venue', 'keywords', 'year', 'n_citation', 'url', 'authors','doc_type', 'references']
+        columns_to_extract = ['id', 'title', 'abstract','venue', 'keywords', 'year', 'n_citation', 'url']
         df = pd.read_csv(file_path, sep='|', usecols=columns_to_extract, nrows=nrows)
 
         # drop rows with duplicate ids
